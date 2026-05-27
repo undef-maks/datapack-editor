@@ -6,8 +6,8 @@
 
 body,
 html {
-  background-color: #0c0c0d;
-  color: #e3e3e6;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
@@ -15,7 +15,6 @@ html {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -25,36 +24,6 @@ html {
   flex-direction: column;
 }
 
-header {
-  height: 44px;
-  background-color: #141416;
-  border-bottom: 1px solid #222226;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
-  flex-shrink: 0;
-}
-
-header div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-header span[style*="cursor: pointer"] {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: #ffffff;
-}
-
-header span:not([style*="cursor: pointer"]) {
-  color: #696974;
-  font-size: 11px;
-  font-family: monospace;
-}
-
 main {
   flex-grow: 1;
   overflow: hidden;
@@ -62,15 +31,12 @@ main {
   height: calc(100vh - 44px);
   width: 100%;
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  justify-content: flex-start;
 }
 
 button {
-  background-color: #1c1c1f;
-  color: #e3e3e6;
-  border: 1px solid #2d2d34;
+  background-color: var(--button-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 500;
@@ -80,6 +46,8 @@ button {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  width: fit-content;
+  white-space: nowrap;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -87,7 +55,7 @@ button {
 }
 
 button:hover {
-  background-color: #252529;
+  background-color: var(--button-hover);
   border-color: #3f3f46;
   color: #ffffff;
 }
@@ -97,25 +65,13 @@ button:active {
   border-color: #27272a;
 }
 
-header button {
-  background-color: #141416;
-  border-color: #222226;
-  font-size: 11px;
-  padding: 5px 10px;
-}
-
-header button:hover {
-  background-color: #1c1c1f;
-  border-color: #2d2d34;
-}
-
 select,
 input[type="text"],
 input[type="number"],
 textarea {
-  background-color: #0c0c0d;
-  color: #e3e3e6;
-  border: 1px solid #222226;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   padding: 8px 10px;
   font-size: 12px;
   border-radius: 4px;
@@ -124,22 +80,15 @@ textarea {
   transition: border-color 0.15s ease;
 }
 
-select:hover,
-input:hover,
-textarea:hover {
-  border-color: #2d2d34;
-}
-
 select:focus,
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: #d97706;
-  background-color: #111113;
+  border-color: var(--accent-color);
 }
 
 input[type="checkbox"] {
-  accent-color: #d97706;
+  accent-color: var(--accent-color);
   width: 14px;
   height: 14px;
   cursor: pointer;
@@ -148,29 +97,8 @@ input[type="checkbox"] {
 label {
   display: block;
   font-size: 10px;
-  color: #94949e;
+  color: var(--text-secondary);
   margin-bottom: 6px;
   font-weight: 700;
   letter-spacing: 0.5px;
-}
-
-div[style*="rgba(0,0,0,0.5)"] label {
-  margin-top: 14px;
-}
-
-div[style*="rgba(0,0,0,0.5)"] label:first-child {
-  margin-top: 4px;
-}
-
-div[style*="rgba(0,0,0,0.5)"] label:last-of-type {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #e3e3e6;
-  text-transform: none;
-  font-weight: 400;
-  letter-spacing: 0;
-  margin-top: 16px;
-  cursor: pointer;
 }

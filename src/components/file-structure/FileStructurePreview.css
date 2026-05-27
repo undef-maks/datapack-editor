@@ -1,0 +1,18 @@
+.file-tree {
+  background: #252526;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  font-family: monospace;
+  font-size: 13px;
+}
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+.tree-children {
+  padding-left: 20px;
+}

@@ -1,176 +1,103 @@
-main > div:first-child {
+.dashboard-wrapper {
   height: 100%;
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-main > div:first-child > div:first-of-type {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-main > div:first-child h2 {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #ffffff;
-  margin-bottom: 8px;
-}
-
-main > div:first-child p {
-  font-size: 12px;
-  color: #696974;
-  line-height: 1.5;
-  max-width: 340px;
-  margin: 0 auto;
-}
-
-main > div:first-child > div:nth-of-type(2) {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-main > div:first-child > div:nth-of-type(2) button {
-  width: 100%;
-  padding: 16px;
-  background-color: #141416;
-  border: 1px solid #222226;
-  border-radius: 6px;
-  justify-content: flex-start;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-main > div:first-child > div:nth-of-type(2) button:hover {
-  background-color: #1c1c1f;
-  border-color: #2d2d34;
-  color: #ffffff;
-}
-
-div[style*="position: fixed"] label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: #94949e;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-
-div[style*="position: fixed"] input[type="text"],
-div[style*="position: fixed"] select {
-  width: 100%;
-  background-color: #0c0c0d;
-  border: 1px solid #222226;
-  padding: 8px 10px;
-  border-radius: 4px;
-  color: #e3e3e6;
-  font-size: 12px;
-  margin-bottom: 14px;
-}
-
-div[style*="position: fixed"] input:focus,
-div[style*="position: fixed"] select:focus {
-  outline: none;
-  border-color: #d97706;
-}
-
-div[style*="position: fixed"] div:has(> div:contains("No Img")),
-div[style*="position: fixed"] label + div {
-  display: flex;
-  gap: 10px;
   align-items: center;
-  margin-bottom: 14px;
+  background-color: var(--bg-color);
 }
 
-div[style*="position: fixed"] div:has(> div:contains("No Img")) div,
-div[style*="position: fixed"] label + div > div:first-child {
-  width: 40px;
-  height: 40px;
-  background-color: #0c0c0d;
-  border: 1px solid #222226;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: #696974;
-  font-weight: 600;
-  flex-shrink: 0;
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 400px 500px;
+  gap: 60px;
+  padding: 40px;
 }
 
-div[style*="position: fixed"] div:has(> div:contains("No Img")) button,
-div[style*="position: fixed"] label + div > button {
-  flex-grow: 1;
-  padding: 10px;
+.dashboard-recent {
+  max-width: 500px;
 }
 
-div[style*="position: fixed"] span {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: #94949e;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #222226;
-}
-
-div[style*="position: fixed"] label:has(input[type="checkbox"]) {
+.recent-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: #e3e3e6;
-  text-transform: none;
-  font-weight: 400;
-  margin-bottom: 8px;
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: var(--header-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: border-color 0.2s;
+}
+
+.recent-item:hover {
+  border-color: #3f3f46;
+}
+
+.item-info h4 {
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: var(--text-primary);
+}
+
+.item-info span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.last-modified {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.open-recent-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  font-size: 18px;
+  color: var(--accent-color);
   cursor: pointer;
 }
 
-div[style*="position: fixed"] p {
-  font-size: 12px;
-  color: #94949e;
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-div[style*="position: fixed"] div:last-child:has(button) {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 20px;
-}
-
-div[style*="position: fixed"] div:last-child:has(button) button:first-child {
-  background-color: #d97706;
-  border-color: #b45309;
+.submit-btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  background-color: var(--accent-color);
   color: #ffffff;
+  border: none;
+  border-radius: 4px;
   font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
 }
 
-div[style*="position: fixed"]
-  div:last-child:has(button)
-  button:first-child:hover {
-  background-color: #f59e0b;
-  border-color: #d97706;
+.submit-btn:hover {
+  background-color: var(--accent-hover);
 }
 
-div[style*="position: fixed"] div:last-child:has(button) button:last-child {
-  background-color: transparent;
-  border-color: #222226;
-  color: #696974;
-}
-
-div[style*="position: fixed"]
-  div:last-child:has(button)
-  button:last-child:hover {
-  border-color: #2d2d34;
-  color: #e3e3e6;
+.form-group {
+  margin-bottom: 15px;
 }

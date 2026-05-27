@@ -1,151 +1,146 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { IoTimeOutline, IoChevronForward } from "react-icons/io5";
+import { set, get } from "idb-keyval";
 import Modal from "../../components/modal/Modal";
+import ActionPanel from "./action-panel/ActionPanel";
+import FileStructurePreview from "../../components/file-structure/FileStructurePreview";
+import { createDatapackStructure } from "../../utils/datapackUtils";
+import {
+  addRecentProject,
+  getRecentProjects,
+} from "../../utils/recentProjects";
 import "./Dashboard.css";
 
 export default function Dashboard({ setView, setDirectoryHandle }) {
+  const { t } = useTranslation();
   const [activeModal, setActiveModal] = useState(null);
-  const [error, setError] = useState("");
+  const [folderHandle, setFolderHandle] = useState(null);
+  const [gameName, setGameName] = useState("");
+  const [datapackName, setDatapackName] = useState("");
+  const [recentProjects, setRecentProjects] = useState([]);
 
-  const handleOpenDirectory = async () => {
-    try {
-      setError("");
+  useEffect(() => {
+    setRecentProjects(getRecentProjects());
+  }, []);
 
-      const dirHandle = await window.showDirectoryPicker();
+  const handleCreate = async () => {
+    if (!folderHandle || !gameName || !datapackName) return;
 
-      let hasManifest = false;
-      for await (const entry of dirHandle.values()) {
-        if (entry.kind === "file" && entry.name === "manifest.json") {
-          hasManifest = true;
-          break;
-        }
-      }
+    const newDir = await folderHandle.getDirectoryHandle(datapackName, {
+      create: true,
+    });
+    await createDatapackStructure(newDir, gameName, datapackName);
 
-      if (!hasManifest) {
-        setError("Помилка: У вибраній директорії немає файлу manifest.json");
+    await set(`handle-${datapackName}`, newDir);
+
+    addRecentProject(datapackName, gameName);
+    setRecentProjects(getRecentProjects());
+    setDirectoryHandle(newDir);
+    setView("datapack_editor");
+  };
+
+  const openProject = async (name, handle) => {
+    // Перевірка дозволу
+    if ((await handle.queryPermission({ mode: "readwrite" })) !== "granted") {
+      if ((await handle.requestPermission({ mode: "readwrite" })) !== "granted")
         return;
-      }
+    }
+    setDirectoryHandle(handle);
+    setView("datapack_editor");
+  };
 
-      setDirectoryHandle(dirHandle);
-      setActiveModal(null);
+  const handleOpenExisting = async () => {
+    try {
+      const dir = await window.showDirectoryPicker();
+      await set(`handle-${dir.name}`, dir);
+      addRecentProject(dir.name, "Unknown");
+      setRecentProjects(getRecentProjects());
+      setDirectoryHandle(dir);
       setView("datapack_editor");
     } catch (err) {
-      if (err.name !== "AbortError") {
-        setError(
-          "Не вдалося отримати доступ до папки. Перевірте дозволи браузера.",
-        );
-      }
+      console.error(err);
     }
   };
 
   return (
-    <div>
-      <div>
-        <h2>ГОЛОВНИЙ ЕКРАН</h2>
-        <p>
-          Оберіть дію для початку розробки контенту або конфігурації нових
-          шаблонів ігор.
-        </p>
-      </div>
-
-      <div>
-        <button onClick={() => setActiveModal("pack")}>
-          📦 Створити датапак
-        </button>
-
-        <button onClick={() => setActiveModal("open")}>
-          📂 Відкрити датапак
-        </button>
-
-        <button onClick={() => setActiveModal("layout")}>
-          🛠️ Створити шаблон гри
-        </button>
+    <div className="dashboard-wrapper">
+      <div className="dashboard-container">
+        <ActionPanel
+          onCreateClick={() => setActiveModal("pack")}
+          onOpenClick={() => setActiveModal("open")}
+        />
+        <div className="dashboard-recent">
+          <div className="recent-header">
+            <IoTimeOutline />
+            <span>{t("recent_projects")}</span>
+          </div>
+          <div className="recent-list">
+            {recentProjects.map((proj) => (
+              <div key={proj.id} className="recent-item">
+                <div className="item-info">
+                  <h4>{proj.name}</h4>
+                  <span>{proj.game}</span>
+                </div>
+                <div className="item-meta">
+                  <button
+                    className="open-recent-btn"
+                    onClick={async () => {
+                      const handle = await get(`handle-${proj.name}`);
+                      if (handle) openProject(proj.name, handle);
+                      else alert("Папку не знайдено, оберіть її через 'Open'");
+                    }}
+                  >
+                    <IoChevronForward />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Modal
         isOpen={activeModal === "pack"}
         onClose={() => setActiveModal(null)}
-        title="CreateDatapackModal"
+        title={t("create_datapack")}
       >
-        <div>
-          <label>2. Вибір гри</label>
-          <select>
-            <option>Undef Game 2</option>
-            <option>World of Tanks 2D Retro</option>
-          </select>
-        </div>
-        <div>
-          <label>3. Шаблони датапаку</label>
-          <select>
-            <option>ore_layout (Шаблон руди)</option>
-            <option>items_equipment_layout</option>
-          </select>
-        </div>
-        <div>
-          <label>4. Назва датапаку</label>
-          <input type="text" maxLength={32} />
-        </div>
-        <div>
-          <label>5. Іконка датапаку</label>
-          <div>
-            <div>No Img</div>
-            <button>Завантажити свою</button>
-          </div>
-        </div>
-        <div>
-          <button onClick={() => setView("datapack_editor")}>
-            6. Виконати (Вибір папки)
-          </button>
-          <button onClick={() => setActiveModal(null)}>7. Закрити</button>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={activeModal === "layout"}
-        onClose={() => setActiveModal(null)}
-        title="CreateGameDatapackLayoutModal"
-      >
-        <div>
-          <label>Вибір або назва гри</label>
-          <input type="text" />
-        </div>
-        <div>
-          <label>Назва шаблону</label>
-          <input type="text" />
-        </div>
-        <div>
-          <span>Налаштування компіляції</span>
-          <label>
-            <input type="checkbox" />
-            Завантажувати всі .json в один файл
-          </label>
-          <label>
-            <input type="checkbox" />
-            Мінімізувати текстури (Збірка в атлас)
-          </label>
-        </div>
-        <div>
-          <button onClick={() => setView("layout_editor")}>Створити</button>
-          <button onClick={() => setActiveModal(null)}>Повернутись</button>
-        </div>
+        <input
+          type="text"
+          placeholder="Назва гри"
+          value={gameName}
+          onChange={(e) => setGameName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Назва датапаку"
+          value={datapackName}
+          onChange={(e) => setDatapackName(e.target.value)}
+        />
+        <button
+          onClick={async () =>
+            setFolderHandle(await window.showDirectoryPicker())
+          }
+        >
+          {folderHandle ? "Папку обрано" : "Оберіть місце для проекту"}
+        </button>
+        <button
+          className="submit-btn"
+          onClick={handleCreate}
+          disabled={!folderHandle}
+        >
+          {t("dashboard_btn_create")}
+        </button>
       </Modal>
 
       <Modal
         isOpen={activeModal === "open"}
-        onClose={() => {
-          setActiveModal(null);
-          setError("");
-        }}
-        title="Відкрити датапак"
+        onClose={() => setActiveModal(null)}
+        title={t("open_datapack")}
       >
-        <div>
-          <p>Оберіть робочу директорію проєкту на вашому комп'ютері.</p>
-
-          {error && <p className="error-message">{error}</p>}
-
-          <button onClick={handleOpenDirectory}>
-            📁 Обрати папку на диску
-          </button>
-        </div>
+        <button className="submit-btn" onClick={handleOpenExisting}>
+          {t("dashboard_btn_open")}
+        </button>
       </Modal>
     </div>
   );

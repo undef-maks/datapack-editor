@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
+import Header from "./components/header/Header";
 import Dashboard from "./views/dashboard/Dashboard";
-import GameLayoutEditor from "./views/layout-editor/GameLayoutEditor";
 import DatapackEditor from "./views/editor/DatapackEditor";
-import Modal from "./components/modal/Modal";
+import SettingsModal from "./components/settings/SettingsModal";
 import "./App.css";
 
 export default function App() {
@@ -10,41 +10,28 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [directoryHandle, setDirectoryHandle] = useState(null);
 
-  const [lang, setLang] = useState(
-    () => localStorage.getItem("dw_lang") || "ua",
-  );
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("dw_theme") || "dark",
-  );
-  const [autoSave, setAutoSave] = useState(
-    () => localStorage.getItem("dw_autosave") === "true",
-  );
+  const [settings, setSettings] = useState(() => ({
+    lang: localStorage.getItem("dw_lang") || "ua",
+    theme: localStorage.getItem("dw_theme") || "dark",
+    autoSave: localStorage.getItem("dw_autosave") === "true",
+  }));
 
   useEffect(() => {
-    localStorage.setItem("dw_lang", lang);
-    localStorage.setItem("dw_theme", theme);
-    localStorage.setItem("dw_autosave", autoSave);
-  }, [lang, theme, autoSave]);
+    document.body.classList.remove("theme-dark", "theme-amoled", "theme-light");
+    document.body.classList.add(`theme-${settings.theme}`);
+
+    localStorage.setItem("dw_theme", settings.theme);
+    localStorage.setItem("dw_lang", settings.lang);
+    localStorage.setItem("dw_autosave", settings.autoSave);
+  }, [settings]);
 
   return (
-    <div>
-      <header>
-        <div>
-          <span
-            onClick={() => setView("dashboard")}
-            style={{ cursor: "pointer" }}
-          >
-            DATAPACK WORKSHOP
-          </span>
-          {view !== "dashboard" && (
-            <span>
-              {view === "layout_editor" ? " [Layout Mode]" : " [Project Mode]"}
-            </span>
-          )}
-        </div>
-
-        <button onClick={() => setIsSettingsOpen(true)}>⚙️ Налаштування</button>
-      </header>
+    <div className="app-wrapper">
+      <Header
+        view={view}
+        setView={setView}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
 
       <main>
         {view === "dashboard" && (
@@ -53,48 +40,23 @@ export default function App() {
             setDirectoryHandle={setDirectoryHandle}
           />
         )}
-        {view === "layout_editor" && <GameLayoutEditor setView={setView} />}
         {view === "datapack_editor" && (
           <DatapackEditor
             setView={setView}
-            autoSave={autoSave}
+            autoSave={settings.autoSave}
             directoryHandle={directoryHandle}
+            settings={settings}
+            setSettings={setSettings}
           />
         )}
       </main>
 
-      <Modal
+      <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        title="Глобальні налаштування"
-      >
-        <div>
-          <label>Мова / Language</label>
-          <select value={lang} onChange={(e) => setLang(e.target.value)}>
-            <option value="ua">Українська</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Тема інтерфейсу</label>
-          <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-            <option value="dark">Core Dark (Carbon)</option>
-            <option value="amoled">Amoled Black</option>
-          </select>
-        </div>
-
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              checked={autoSave}
-              onChange={(e) => setAutoSave(e.target.checked)}
-            />
-            Автоматичне збереження
-          </label>
-        </div>
-      </Modal>
+        settings={settings}
+        setSettings={setSettings}
+      />
     </div>
   );
 }

@@ -1,0 +1,56 @@
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  height: 48px;
+}
+
+.header-brand {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--text-primary);
+}
+
+.view-mode {
+  font-size: 11px;
+  color: var(--accent-color);
+  background: rgba(217, 119, 6, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.settings-btn:hover {
+  background: var(--button-hover);
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+}
+
+.settings-btn svg {
+  font-size: 14px;
+}
