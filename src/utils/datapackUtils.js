@@ -3,11 +3,6 @@ export const createDatapackStructure = async (
   gameName,
   datapackName,
 ) => {
-  const layoutsDir = await rootHandle.getDirectoryHandle("layouts", {
-    create: true,
-  });
-  const dataDir = await rootHandle.getDirectoryHandle("data", { create: true });
-
   const createFile = async (parent, name, content) => {
     const handle = await parent.getFileHandle(name, { create: true });
     const writable = await handle.createWritable();
@@ -17,15 +12,21 @@ export const createDatapackStructure = async (
     await writable.close();
   };
 
-  await createFile(layoutsDir, "layouts.json", []);
+  const srcDir = await rootHandle.getDirectoryHandle("src", { create: true });
+  const dataDir = await srcDir.getDirectoryHandle("data", { create: true });
+  const assetsDir = await srcDir.getDirectoryHandle("assets", { create: true });
+  const layoutsDir = await rootHandle.getDirectoryHandle("layouts", {
+    create: true,
+  });
+
   await createFile(rootHandle, "manifest.json", {
     game: gameName,
     name: datapackName,
     version: "1.0.0",
   });
-  await createFile(rootHandle, "datapack_settings.json", {
-    layoutsPath: "layouts/layouts.json",
+  await createFile(rootHandle, "settings.json", {
+    layouts: [],
   });
 
-  return { rootHandle, layoutsDir, dataDir };
+  return { rootHandle, srcDir, dataDir, assetsDir, layoutsDir };
 };

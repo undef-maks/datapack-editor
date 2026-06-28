@@ -1,12 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { EditorProvider } from "../../context/EditorContext";
 import FileBrowser from "./file-browser/FileBrowser";
 import EditorHeader from "./editor-header/EditorHeader";
 import EditorContent from "./editor-content/EditorContent";
 import EditorModal from "./editor-modal/EditorModal";
 import EditorToolbar from "./toolbar/EditorToolbar";
 import SettingsModal from "../../components/settings/SettingsModal";
-import { useFileSystem } from "../../hooks/useFileSystem";
+import { useFileSystem } from "@hooks/useFileSystem";
+import { useFileEditor } from "@hooks/useFileEditor";
+import { useEditorModal } from "@hooks/useEditorModal";
+import { generateInitialJson } from "../../utils/layoutEngine";
+import { DatapackCompiler } from "@utils/compiler";
 import "./DatapackEditor.css";
 
 export default function DatapackEditor({
@@ -15,168 +19,126 @@ export default function DatapackEditor({
   settings,
   setSettings,
 }) {
-  const { t } = useTranslation();
-  const {
-    fileSystem,
-    setFileSystem,
-    layoutList,
-    getDirHandleFromPath,
-    handleOpenFile,
-    handleSave,
-    handleCreateFile,
-    handleCreateFolder,
-    handleUpdateLayout,
-  } = useFileSystem(directoryHandle);
+  const fs = useFileSystem(directoryHandle);
+  const editor = useFileEditor(fs);
+  const modal = useEditorModal();
 
-  const [activeFile, setActiveFile] = useState("");
-  const [activeModal, setActiveModal] = useState(null);
-  const [fileContent, setFileContent] = useState("");
-  const [originalContent, setOriginalContent] = useState("");
-  const [modalInput, setModalInput] = useState("");
-  const [currentLayout, setCurrentLayout] = useState(null);
-  const [viewMode, setViewMode] = useState("form");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const isDirty = fileContent !== originalContent;
+  const handleBuild = async () => {
+    if (!directoryHandle) {
+      modal.setModal({
+        type: "build-status",
+        result: {
+          success: false,
+          error: "Кореневу директорію проєкту не знайдено.",
+        },
+      });
+      return;
+    }
 
-  const onFileOpen = (path) => {
-    handleOpenFile(
-      path,
-      (p) => setActiveFile(p),
-      (content) => {
-        setFileContent(content);
-        setOriginalContent(content);
-      },
-      layoutList,
-      setCurrentLayout,
-      setViewMode,
-    );
+    try {
+      window.__isCompiling = true;
+
+      const buildHandle = await directoryHandle.getDirectoryHandle("build", {
+        create: true,
+      });
+
+      const srcHandle = await directoryHandle.getDirectoryHandle("src");
+
+      const compiler = new DatapackCompiler(srcHandle, buildHandle);
+      const result = await compiler.build();
+
+      window.__isCompiling = false;
+
+      if (fs.refreshDirectory) {
+        await fs.refreshDirectory();
+      }
+
+      modal.setModal({
+        type: "build-status",
+        result: result,
+      });
+    } catch (err) {
+      window.__isCompiling = false;
+      console.error(err);
+      modal.setModal({
+        type: "build-status",
+        result: { success: false, error: err.message },
+      });
+    }
+  };
+  const onUpdateLayout = async (filePath, selectedLayoutId) => {
+    const layoutsList = editor.layoutsList || [];
+    const currentLayout = layoutsList.find((l) => l.id === selectedLayoutId);
+    if (!currentLayout) return;
+
+    const initialData = generateInitialJson(currentLayout, selectedLayoutId);
+    const jsonString = JSON.stringify(initialData, null, "\t");
+
+    if (fs.handleSave) {
+      await fs.handleSave(filePath, fs.fileSystem, jsonString);
+
+      fs.setFileSystem((prev) =>
+        prev.map((f) => (f.name === filePath ? { ...f, hasLayout: true } : f)),
+      );
+
+      if (editor.activeFile === filePath) {
+        editor.setFileContent(jsonString);
+      }
+    }
+
+    modal.setModal(null);
   };
 
-  const onSave = useCallback(async () => {
-    if (isDirty && activeFile) {
-      await handleSave(activeFile, fileSystem, fileContent);
-      setOriginalContent(fileContent);
-    }
-  }, [activeFile, fileSystem, fileContent, isDirty, handleSave]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        onSave();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSave]);
+  const contextValue = {
+    ...fs,
+    ...editor,
+    ...modal,
+    setFileSystem: fs.setFileSystem,
+    onUpdateLayout,
+  };
 
   return (
-    <div className="editor-layout">
-      <div className="editor-sidebar-container">
-        <EditorToolbar
-          onGoHome={() => setView("dashboard")}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-        />
-        <FileBrowser
-          fileSystem={fileSystem}
-          activeFile={activeFile}
-          setActiveFile={onFileOpen}
-          setActiveModal={setActiveModal}
-          onDeleteFile={async (p) => {
-            const dirHandle = await getDirHandleFromPath(
-              p.split("/").slice(0, -1).join("/"),
-            );
-            await dirHandle.removeEntry(p.split("/").pop());
-            setFileSystem((prev) => prev.filter((f) => f.name !== p));
-          }}
-          onChangeLayout={(path) => setActiveModal({ type: "layout", path })}
-        />
-      </div>
-
-      <div className="editor-main-panel">
-        <EditorHeader
-          activeFile={activeFile}
-          onSave={onSave}
-          isDirty={isDirty}
-        />
-
-        {currentLayout && (
-          <div className="panel-tabs">
-            <button
-              className={viewMode === "form" ? "active" : ""}
-              onClick={() => setViewMode("form")}
-            >
-              {t("tab_form")}
-            </button>
-            <button
-              className={viewMode === "json" ? "active" : ""}
-              onClick={() => setViewMode("json")}
-            >
-              {t("tab_json")}
-            </button>
-          </div>
-        )}
-
-        <div className="panel-body">
-          <EditorContent
-            viewMode={viewMode}
-            currentLayout={currentLayout}
-            fileContent={fileContent}
-            setFileContent={setFileContent}
+    <EditorProvider value={contextValue}>
+      <div className="editor-layout">
+        <div className="editor-sidebar-container">
+          <EditorToolbar
+            onGoHome={() => setView("dashboard")}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
+          <FileBrowser />
         </div>
+        <div className="editor-main-panel">
+          <EditorHeader
+            activeFile={editor.activeFile}
+            onSave={editor.onSave}
+            onBuild={handleBuild}
+            isDirty={editor.isDirty}
+            fileContent={editor.fileContent}
+            layoutsList={editor.layoutsList}
+          />
+
+          <div className="panel-body">
+            <EditorContent
+              viewMode={editor.viewMode}
+              setViewMode={editor.setViewMode}
+              currentLayout={editor.currentLayout}
+              filePath={editor.activeFile}
+              fileContent={editor.fileContent}
+              fileBlob={editor.fileBlob}
+              setFileContent={editor.setFileContent}
+            />
+          </div>
+        </div>
+        <EditorModal />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          settings={settings}
+          setSettings={setSettings}
+        />
       </div>
-
-      <EditorModal
-        activeModal={activeModal}
-        modalInput={modalInput}
-        layoutList={layoutList}
-        setModalInput={setModalInput}
-        activeFile={activeModal?.path}
-        onClose={() => {
-          setActiveModal(null);
-          setModalInput("");
-        }}
-        onCreate={(n, p, l) => {
-          if (activeModal.type === "folder") {
-            handleCreateFolder(
-              n,
-              p,
-              setFileSystem,
-              setActiveModal,
-              setModalInput,
-            );
-          } else {
-            handleCreateFile(
-              n,
-              p,
-              l,
-              setFileSystem,
-              setActiveModal,
-              setModalInput,
-            );
-          }
-        }}
-        onUpdateLayout={(p, l) =>
-          handleUpdateLayout(
-            p,
-            l,
-            fileSystem,
-            setFileSystem,
-            setActiveModal,
-            setModalInput,
-            (path) => onFileOpen(path),
-          )
-        }
-      />
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        setSettings={setSettings}
-      />
-    </div>
+    </EditorProvider>
   );
 }

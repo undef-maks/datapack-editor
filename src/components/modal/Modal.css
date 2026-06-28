@@ -19,7 +19,7 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   animation: scaleUp 0.2s ease-out;
 }
 
@@ -84,6 +84,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow: visible !important;
 }
 
 .modal-body label {
@@ -93,7 +94,8 @@
   margin-bottom: 4px;
 }
 
-.modal-body input,
+.modal-body input[type="text"],
+.modal-body input[type="number"],
 .modal-body select {
   width: 100%;
   padding: 10px 12px;
@@ -106,7 +108,9 @@
   transition: border-color 0.2s;
 }
 
-.modal-body input:focus {
+.modal-body input[type="text"]:focus,
+.modal-body input[type="number"]:focus,
+.modal-body select:focus {
   border-color: var(--accent-color);
 }
 
@@ -125,4 +129,62 @@
 
 .modal-body button:hover {
   background-color: var(--accent-hover);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body .form-group label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-transform: none;
+  user-select: none;
+  margin: 4px 0;
+}
+
+.modal-body input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  outline: none;
+  margin: 0;
+}
+
+.modal-body input[type="checkbox"]:hover {
+  border-color: var(--accent-color);
+}
+
+.modal-body input[type="checkbox"]:checked {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.modal-body input[type="checkbox"]:checked::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: #ffffff;
+  clip-path: polygon(14% 44%, 0 58%, 38% 94%, 100% 16%, 84% 3%, 38% 66%);
+}
+
+.modal-body input[type="checkbox"]:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--header-bg),
+    0 0 0 4px var(--accent-color);
 }

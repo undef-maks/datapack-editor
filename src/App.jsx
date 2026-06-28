@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import Header from "./components/header/Header";
 import Dashboard from "./views/dashboard/Dashboard";
 import DatapackEditor from "./views/editor/DatapackEditor";
-import SettingsModal from "./components/settings/SettingsModal";
+import SettingsModal from "@components/settings/SettingsModal";
+import { ModalProvider } from "@context/ModalContext";
+import ModalManager from "@components/modal/ModalManager";
 import "./App.css";
 
 export default function App() {
   const [view, setView] = useState("dashboard");
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [directoryHandle, setDirectoryHandle] = useState(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [settings, setSettings] = useState(() => ({
     lang: localStorage.getItem("dw_lang") || "ua",
@@ -26,37 +28,44 @@ export default function App() {
   }, [settings]);
 
   return (
-    <div className="app-wrapper">
-      <Header
-        view={view}
-        setView={setView}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
+    <ModalProvider>
+      <div className="app-wrapper">
+        <Header
+          view={view}
+          setView={setView}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
 
-      <main>
-        {view === "dashboard" && (
-          <Dashboard
-            setView={setView}
-            setDirectoryHandle={setDirectoryHandle}
-          />
-        )}
-        {view === "datapack_editor" && (
-          <DatapackEditor
-            setView={setView}
-            autoSave={settings.autoSave}
-            directoryHandle={directoryHandle}
-            settings={settings}
-            setSettings={setSettings}
-          />
-        )}
-      </main>
+        <main>
+          {view === "dashboard" && (
+            <Dashboard
+              setView={setView}
+              setDirectoryHandle={setDirectoryHandle}
+            />
+          )}
+          {view === "datapack_editor" && (
+            <DatapackEditor
+              setView={setView}
+              autoSave={settings.autoSave}
+              directoryHandle={directoryHandle}
+              settings={settings}
+              setSettings={setSettings}
+            />
+          )}
+        </main>
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        setSettings={setSettings}
-      />
-    </div>
+        <ModalManager
+          setView={setView}
+          setDirectoryHandle={setDirectoryHandle}
+        />
+
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          settings={settings}
+          setSettings={setSettings}
+        />
+      </div>
+    </ModalProvider>
   );
 }

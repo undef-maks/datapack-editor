@@ -30,6 +30,7 @@
   display: flex;
   align-items: center;
   width: 100%;
+  min-width: 0;
   height: 28px;
   cursor: pointer;
   color: var(--text-secondary);
@@ -46,6 +47,20 @@
 .active-file {
   background-color: var(--button-hover);
   color: var(--accent-color) !important;
+}
+
+.clickable.selected {
+  background-color: #264f78 !important;
+  color: #ffffff !important;
+}
+
+.clickable.selected:hover {
+  background-color: #336191 !important;
+}
+
+.clickable.selected .file-icon,
+.clickable.selected svg {
+  color: #ffffff !important;
 }
 
 .folder-actions {
@@ -100,4 +115,58 @@
 
 .context-menu button:hover {
   background: var(--button-hover);
+}
+
+.clickable input,
+.sidebar-create-box input {
+  background: var(--button-hover);
+  border: 1px solid var(--accent-color);
+  color: var(--text-primary);
+  padding: 0 6px;
+  font-size: 13px;
+  height: 22px;
+  width: 100%;
+  border-radius: 3px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.clickable input:focus,
+.sidebar-create-box input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.sidebar-create-box {
+  padding-right: 12px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.clickable.drag-target-active {
+  background-color: rgba(219, 120, 6, 0.12) !important;
+  outline: 1px dashed var(--accent-color) !important;
+  outline-offset: -1px;
+  border-radius: 4px;
+}
+
+.editor-sidebar-panel.drag-root-active {
+  background-color: rgba(74, 158, 255, 0.05) !important;
+  position: relative;
+}
+
+.editor-sidebar-panel.drag-root-active:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  outline: 2px dashed #4a9eff !important;
+  outline-offset: -2px;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 10;
 }

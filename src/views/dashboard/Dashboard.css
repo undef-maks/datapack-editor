@@ -49,7 +49,9 @@
 .recent-item:hover {
   border-color: #3f3f46;
 }
-
+.item-info img {
+  margin-bottom: 12px;
+}
 .item-info h4 {
   font-size: 13px;
   margin-bottom: 2px;

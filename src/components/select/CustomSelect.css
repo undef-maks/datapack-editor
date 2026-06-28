@@ -33,8 +33,9 @@
   z-index: 10;
   margin-top: 2px;
   animation: fadeIn 0.2s ease-out;
-  overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  max-height: 160px;
+  overflow-y: auto;
 }
 
 @keyframes fadeIn {
@@ -54,6 +55,10 @@
   transition:
     background 0.15s ease,
     padding-left 0.15s ease;
+}
+
+.select-item:last-child {
+  border-bottom: none;
 }
 
 .select-item:hover,
@@ -82,8 +87,4 @@
   transition: transform 0.3s ease;
   display: inline-block;
   font-size: 10px;
-}
-
-.custom-select.open .arrow {
-  transform: rotate(180deg);
 }

@@ -1,191 +1,177 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  VscFolder,
-  VscFolderOpened,
-  VscFile,
-  VscAdd,
-  VscNewFile,
-  VscNewFolder,
-  VscSymbolMethod,
-  VscFiles,
-} from "react-icons/vsc";
-import "./FileBrowser.css";
+import { VscFiles } from "react-icons/vsc";
+import { useEditor } from "@context/EditorContext";
+import { useTreeBuilder } from "@hooks/useTreeBuilder";
+import TreeNode from "./TreeNode";
+import ContextMenu from "./ContextMenu";
 
-function TreeNode({
-  node,
-  activeFile,
-  setActiveFile,
-  setActiveModal,
-  setContextMenu,
-  level = 0,
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const paddingLeft = `${level * 18 + 12}px`;
-
-  const handleContextMenu = (e) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, node });
-  };
-
-  if (node.type === "file") {
-    return (
-      <div
-        className={`clickable ${activeFile === node.path ? "active-file" : ""}`}
-        style={{ paddingLeft }}
-        onClick={() => setActiveFile(node.path)}
-        onContextMenu={handleContextMenu}
-      >
-        {node.hasLayout ? (
-          <VscSymbolMethod
-            style={{ marginRight: "8px", color: "#d97706", fontSize: "16px" }}
-          />
-        ) : (
-          <VscFile
-            style={{ marginRight: "8px", color: "#696974", fontSize: "16px" }}
-          />
-        )}
-        <span>{node.name.split("/").pop()}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="tree-node-wrapper">
-      <div
-        className="clickable tree-folder"
-        style={{ paddingLeft }}
-        onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <span style={{ display: "flex", alignItems: "center" }}>
-          {isOpen ? (
-            <VscFolderOpened
-              style={{ marginRight: "8px", color: "#d97706", fontSize: "16px" }}
-            />
-          ) : (
-            <VscFolder
-              style={{ marginRight: "8px", color: "#94949e", fontSize: "16px" }}
-            />
-          )}
-          {node.name.split("/").pop()}
-        </span>
-        {isHovered && (
-          <div className="folder-actions">
-            <button
-              title="New File"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveModal({ type: "file", path: node.path });
-              }}
-            >
-              <VscNewFile />
-            </button>
-            <button
-              title="New Folder"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveModal({ type: "folder", path: node.path });
-              }}
-            >
-              <VscNewFolder />
-            </button>
-          </div>
-        )}
-      </div>
-      {isOpen && (
-        <div className="folder-children">
-          {node.children.map((child, index) => (
-            <TreeNode
-              key={index}
-              node={child}
-              activeFile={activeFile}
-              setActiveFile={setActiveFile}
-              setActiveModal={setActiveModal}
-              setContextMenu={setContextMenu}
-              level={level + 1}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function FileBrowser({
-  fileSystem,
-  activeFile,
-  setActiveFile,
-  setActiveModal,
-  onDeleteFile,
-  onChangeLayout,
-}) {
+export default function FileBrowser() {
   const { t } = useTranslation();
-  const [contextMenu, setContextMenu] = useState(null);
+  const {
+    fileSystem,
+    setFileSystem,
+    setModal,
+    setRenamingNodePath,
+    handleUploadEntries,
+    handleRenameFile,
+    setFocusedNode,
+    setCreatingNodePath,
+    setCreatingNodeType,
+    selectedPaths,
+    handleNodeClick,
+  } = useEditor();
 
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    window.addEventListener("click", handleClick);
-    return () => window.removeEventListener("click", handleClick);
-  }, []);
+  const treeData = useTreeBuilder(fileSystem);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [menu, setMenu] = useState({ x: 0, y: 0, visible: false, node: null });
+  const panelRef = useRef(null);
+  const dragCounter = useRef(0);
 
-  const buildTree = (flatList) => {
-    const root = { name: "root", type: "folder", children: [], path: "" };
-    flatList.forEach((item) => {
-      const parts = item.name.split("/");
-      let current = root;
-      parts.forEach((part, index) => {
-        const isLast = index === parts.length - 1;
-        let existing = current.children.find((c) => c.name === part);
-        if (!existing) {
-          existing = {
-            name: part,
-            type: isLast && item.type === "file" ? "file" : "folder",
-            path: item.name,
-            children: [],
-            hasLayout: item.hasLayout,
-          };
-          current.children.push(existing);
-        }
-        current = existing;
-      });
+  const getFlatNodes = (nodes) => {
+    let flat = [];
+    nodes.forEach((node) => {
+      flat.push(node);
+      if (node.children) {
+        flat = flat.concat(getFlatNodes(node.children));
+      }
     });
-    return root.children;
+    return flat;
+  };
+
+  window.__flatNodesList = getFlatNodes(treeData);
+
+  const handleContextMenu = (e, node) => {
+    setMenu({ x: e.clientX, y: e.clientY, visible: true, node });
+  };
+
+  const handleMenuAction = (action, path) => {
+    if (action === "delete") setModal({ type: "delete", path });
+    if (action === "rename") setRenamingNodePath(path);
+    if (action === "layout") setModal({ type: "layout", path });
+
+    if (action === "create-file" || action === "create-folder") {
+      const type = action === "create-file" ? "file" : "folder";
+      if (menu.node) {
+        setCreatingNodePath(path);
+        setCreatingNodeType(type);
+        setFocusedNode(menu.node);
+      }
+    }
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (
+      window.__draggedNodePath ||
+      window.__draggedNodesPaths ||
+      e.dataTransfer.types.includes("Files")
+    ) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    dragCounter.current = 0;
+
+    const targetPath = "";
+    let sourcePaths = window.__draggedNodesPaths;
+
+    if (!sourcePaths) {
+      const rawData = e.dataTransfer.getData("application/x-multiple-paths");
+      if (rawData) {
+        try {
+          sourcePaths = JSON.parse(rawData);
+        } catch (err) {}
+      }
+    }
+
+    if (sourcePaths && sourcePaths.length > 0) {
+      const { handleMoveMultipleFiles } = useEditor();
+      await handleMoveMultipleFiles(
+        sourcePaths,
+        targetPath,
+        handleRenameFile,
+        setFileSystem,
+      );
+    } else {
+      const internalPath =
+        window.__draggedNodePath ||
+        e.dataTransfer.getData("application/x-internal-path");
+      if (internalPath) {
+        if (internalPath.includes("/")) {
+          const name = internalPath.split("/").pop();
+          await handleRenameFile(internalPath, name, setFileSystem);
+        }
+      } else if (e.dataTransfer.items) {
+        await handleUploadEntries(e.dataTransfer.items, "");
+      }
+    }
+
+    window.__draggedNodesPaths = null;
+    window.__draggedNodePath = null;
   };
 
   return (
-    <div className="editor-sidebar-panel">
+    <div
+      className={`editor-sidebar-panel ${isDragOver ? "drag-root-active" : ""}`}
+      ref={panelRef}
+      onClick={() => setIsFocused(true)}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{ outline: isFocused ? "1px solid #4a9eff" : "none" }}
+    >
       <div className="sidebar-header">
-        <VscFiles style={{ marginRight: "8px", fontSize: "16px" }} />
+        <VscFiles style={{ marginRight: "8px" }} />
         <span>{t("explorer_title", "Explorer")}</span>
       </div>
       <div className="sidebar-tree">
-        {buildTree(fileSystem).map((node, index) => (
-          <TreeNode
-            key={index}
-            node={node}
-            activeFile={activeFile}
-            setActiveFile={setActiveFile}
-            setActiveModal={setActiveModal}
-            setContextMenu={setContextMenu}
-            level={0}
-          />
-        ))}
+        {[...treeData]
+          .sort((a, b) => {
+            if (a.type === b.type) return a.name.localeCompare(b.name);
+            return a.type === "folder" ? -1 : 1;
+          })
+          .map((node, i) => (
+            <TreeNode
+              key={node.path}
+              node={node}
+              selectedPaths={selectedPaths}
+              onContextMenu={handleContextMenu}
+            />
+          ))}
       </div>
-      {contextMenu && (
-        <div
-          className="context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-          <button onClick={() => onChangeLayout(contextMenu.node.path)}>
-            {t("change_layout", "Змінити layout")}
-          </button>
-          <button onClick={() => onDeleteFile(contextMenu.node.path)}>
-            {t("delete", "Видалити")}
-          </button>
-        </div>
+
+      {menu.visible && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          node={menu.node}
+          onClose={() => setMenu({ ...menu, visible: false })}
+          onAction={handleMenuAction}
+        />
       )}
     </div>
   );

@@ -23,7 +23,7 @@ export default function CustomSelect({
   const selectedOption = options.find((o) => o.value === value);
 
   return (
-    <div className="custom-select" ref={containerRef}>
+    <div className={`custom-select ${isOpen ? "open" : ""}`} ref={containerRef}>
       <div className="select-header" onClick={() => setIsOpen(!isOpen)}>
         {selectedOption ? (
           <div>
@@ -33,7 +33,12 @@ export default function CustomSelect({
         ) : (
           <span className="placeholder">{placeholder}</span>
         )}
-        <span className="arrow">{isOpen ? "▲" : "▼"}</span>
+        <span
+          className="arrow"
+          style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+        >
+          ▼
+        </span>
       </div>
 
       {isOpen && (

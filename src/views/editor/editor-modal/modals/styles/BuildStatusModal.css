@@ -1,0 +1,59 @@
+.build-status-modal {
+  background: var(--bg-color);
+  color: var(--text-primary);
+  padding: 24px;
+  border-radius: 8px;
+  min-width: 400px;
+}
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.status-banner.success {
+  color: #4caf50;
+}
+.status-banner.error {
+  color: #f44336;
+}
+
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.stat-item strong {
+  margin-left: auto;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.btn-close {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-close:hover {
+  opacity: 0.9;
+}
