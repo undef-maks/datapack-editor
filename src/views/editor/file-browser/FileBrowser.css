@@ -170,3 +170,64 @@
   border-radius: inherit;
   z-index: 10;
 }
+
+.editor-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--header-bg);
+  overflow: hidden;
+  position: relative;
+  min-width: 150px;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 100;
+}
+
+.sidebar-resizer:hover {
+  background: var(--accent-color);
+}
+
+.clickable {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.file-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+.sidebar-search {
+  margin-left: auto;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  width: 100px;
+  transition: width 0.2s;
+}
+
+.sidebar-search:focus {
+  width: 150px;
+  outline: 1px solid var(--accent-color);
+}

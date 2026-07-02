@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { EditorProvider } from "../../context/EditorContext";
 import FileBrowser from "./file-browser/FileBrowser";
 import EditorHeader from "./editor-header/EditorHeader";
@@ -22,8 +22,23 @@ export default function DatapackEditor({
   const fs = useFileSystem(directoryHandle);
   const editor = useFileEditor(fs);
   const modal = useEditorModal();
-
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [expandedPaths, setExpandedPaths] = useState(new Set());
+
+  const flattenNodes = (nodes) => {
+    let list = [];
+    nodes.forEach((n) => {
+      list.push(n);
+      if (n.children) list = list.concat(flattenNodes(n.children));
+    });
+    return list;
+  };
+
+  const flatNodesList = useMemo(
+    () => flattenNodes(fs.fileSystem || []),
+    [fs.fileSystem],
+  );
 
   const handleBuild = async () => {
     if (!directoryHandle) {
@@ -36,32 +51,19 @@ export default function DatapackEditor({
       });
       return;
     }
-
     try {
       window.__isCompiling = true;
-
       const buildHandle = await directoryHandle.getDirectoryHandle("build", {
         create: true,
       });
-
       const srcHandle = await directoryHandle.getDirectoryHandle("src");
-
       const compiler = new DatapackCompiler(srcHandle, buildHandle);
       const result = await compiler.build();
-
       window.__isCompiling = false;
-
-      if (fs.refreshDirectory) {
-        await fs.refreshDirectory();
-      }
-
-      modal.setModal({
-        type: "build-status",
-        result: result,
-      });
+      if (fs.refreshDirectory) await fs.refreshDirectory();
+      modal.setModal({ type: "build-status", result: result });
     } catch (err) {
       window.__isCompiling = false;
-      console.error(err);
       modal.setModal({
         type: "build-status",
         result: { success: false, error: err.message },
@@ -73,22 +75,49 @@ export default function DatapackEditor({
     const currentLayout = layoutsList.find((l) => l.id === selectedLayoutId);
     if (!currentLayout) return;
 
-    const initialData = generateInitialJson(currentLayout, selectedLayoutId);
-    const jsonString = JSON.stringify(initialData, null, "\t");
+    const entry = fs.fileSystem.find((f) => f.name === filePath);
+    if (!entry || !entry.handle) return;
+
+    const file = await entry.handle.getFile();
+    const oldContent = await file.text();
+    const oldJson = JSON.parse(oldContent);
+
+    const newLayoutData = generateInitialJson(currentLayout, selectedLayoutId);
+
+    const updatedJson = { ...oldJson };
+
+    Object.keys(newLayoutData).forEach((key) => {
+      if (key === "_meta") {
+        updatedJson._meta = { ...oldJson._meta, ...newLayoutData._meta };
+      } else if (
+        oldJson[key] === undefined ||
+        oldJson[key] === null ||
+        oldJson[key] === ""
+      ) {
+        updatedJson[key] = newLayoutData[key];
+      }
+    });
+
+    const jsonString = JSON.stringify(updatedJson, null, "\t");
 
     if (fs.handleSave) {
       await fs.handleSave(filePath, fs.fileSystem, jsonString);
-
       fs.setFileSystem((prev) =>
         prev.map((f) => (f.name === filePath ? { ...f, hasLayout: true } : f)),
       );
-
-      if (editor.activeFile === filePath) {
-        editor.setFileContent(jsonString);
-      }
+      if (editor.activeFile === filePath) editor.setFileContent(jsonString);
     }
-
     modal.setModal(null);
+  };
+  const expandPath = (path) => {
+    const parts = path.split("/");
+    let current = "";
+    let newSet = new Set();
+    for (let i = 0; i < parts.length - 1; i++) {
+      current = current ? `${current}/${parts[i]}` : parts[i];
+      newSet.add(current);
+    }
+    setExpandedPaths(newSet);
   };
 
   const contextValue = {
@@ -97,17 +126,23 @@ export default function DatapackEditor({
     ...modal,
     setFileSystem: fs.setFileSystem,
     onUpdateLayout,
+    expandedPaths,
+    expandPath,
+    flatNodesList,
   };
 
   return (
     <EditorProvider value={contextValue}>
       <div className="editor-layout">
-        <div className="editor-sidebar-container">
+        <div
+          className="editor-sidebar-container"
+          style={{ width: `${sidebarWidth}px` }}
+        >
           <EditorToolbar
             onGoHome={() => setView("dashboard")}
             onOpenSettings={() => setIsSettingsOpen(true)}
           />
-          <FileBrowser />
+          <FileBrowser width={sidebarWidth} setWidth={setSidebarWidth} />
         </div>
         <div className="editor-main-panel">
           <EditorHeader
@@ -118,7 +153,6 @@ export default function DatapackEditor({
             fileContent={editor.fileContent}
             layoutsList={editor.layoutsList}
           />
-
           <div className="panel-body">
             <EditorContent
               viewMode={editor.viewMode}
@@ -128,6 +162,8 @@ export default function DatapackEditor({
               fileContent={editor.fileContent}
               fileBlob={editor.fileBlob}
               setFileContent={editor.setFileContent}
+              onSave={editor.onSave}
+              migrationList={fs.migrationList}
             />
           </div>
         </div>

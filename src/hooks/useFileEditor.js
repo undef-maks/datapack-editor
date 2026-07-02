@@ -21,8 +21,14 @@ export const useFileEditor = (fs) => {
       setCurrentLayout(null);
       setActiveFile(path);
 
-      if (isModelFile(path)) {
+      const isMigration = fs.migrationList?.find((m) => m.path === path);
+
+      if (isMigration) {
+        setViewMode("migration");
+      } else if (isModelFile(path)) {
         setViewMode("3d");
+      } else {
+        setViewMode("form");
       }
 
       fs.handleOpenFile(
@@ -133,6 +139,7 @@ export const useFileEditor = (fs) => {
     isDirty,
     onSave,
     layoutsList: fs.layoutList,
+    migrationList: fs.migrationList,
     selectedPaths,
     handleNodeClick,
     clearSelection,

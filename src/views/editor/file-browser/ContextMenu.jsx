@@ -37,14 +37,24 @@ export default function ContextMenu({ x, y, onClose, onAction, node }) {
           </div>
         </>
       ) : (
-        <div
-          onClick={() => {
-            onAction("layout", path);
-            onClose();
-          }}
-        >
-          Change Layout
-        </div>
+        <>
+          <div
+            onClick={() => {
+              onAction("layout", path);
+              onClose();
+            }}
+          >
+            Change Layout
+          </div>
+          <div
+            onClick={() => {
+              onAction("migrate", path);
+              onClose();
+            }}
+          >
+            Migrate
+          </div>
+        </>
       )}
 
       <div className="context-menu-separator" />

@@ -33,6 +33,7 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
     selectedPaths,
     handleNodeClick,
     handleMoveMultipleFiles,
+    expandedPaths,
   } = useEditor();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +54,11 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
       setIsOpen(true);
     }
   }, [isCreatingHere]);
-
+  useEffect(() => {
+    if (expandedPaths.has(node.path)) {
+      setIsOpen(true);
+    }
+  }, [expandedPaths, node.path]);
   const handleCreateSubmit = () => {
     if (tempName) {
       if (creatingNodeType === "file") {
@@ -83,13 +88,11 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
   const handleDragStart = (e) => {
     e.stopPropagation();
     let pathsToDrag = [];
-
     if (node.type === "file" && selectedPaths.has(node.path)) {
       pathsToDrag = Array.from(selectedPaths);
     } else {
       pathsToDrag = [node.path || node.name];
     }
-
     window.__draggedNodesPaths = pathsToDrag;
     e.dataTransfer.setData(
       "application/x-multiple-paths",
@@ -116,10 +119,8 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-
     const targetPath = node.path || node.name;
     let sourcePaths = window.__draggedNodesPaths;
-
     if (!sourcePaths) {
       const rawData = e.dataTransfer.getData("application/x-multiple-paths");
       if (rawData) {
@@ -128,7 +129,6 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
         } catch (err) {}
       }
     }
-
     if (sourcePaths && sourcePaths.length > 0) {
       await handleMoveMultipleFiles(
         sourcePaths,
@@ -156,29 +156,21 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
         setIsOpen(true);
       }
     }
-
     window.__draggedNodesPaths = null;
     window.__draggedNodePath = null;
   };
 
   const renderFileIcon = () => {
-    if (node.hasLayout) {
+    if (node.hasLayout)
       return (
         <VscSymbolMethod style={{ marginRight: "8px", color: "#d97706" }} />
       );
-    }
-
     const ext = node.name.split(".").pop().toLowerCase();
     const imageExtensions = ["png", "jpg", "jpeg", "gif", "webp", "ico", "svg"];
-
-    if (imageExtensions.includes(ext)) {
+    if (imageExtensions.includes(ext))
       return <VscFileMedia style={{ marginRight: "8px", color: "#4ec9b0" }} />;
-    }
-
-    if (ext === "json") {
+    if (ext === "json")
       return <VscCode style={{ marginRight: "8px", color: "#ddb87f" }} />;
-    }
-
     return <VscFile style={{ marginRight: "8px", color: "#696974" }} />;
   };
 
@@ -195,7 +187,7 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
       onClick={(e) => e.stopPropagation()}
     />
   ) : (
-    node.name.split("/").pop()
+    <span className="file-name">{node.name.split("/").pop()}</span>
   );
 
   const nodeProps = {
@@ -242,7 +234,14 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
           setFocusedNode(node);
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexGrow: 1,
+            minWidth: 0,
+          }}
+        >
           <FolderIcon
             style={{
               marginRight: "8px",
@@ -281,7 +280,6 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
           </div>
         )}
       </div>
-
       {isCreatingHere && (
         <div
           className="sidebar-create-box"
@@ -307,11 +305,14 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
       )}
       {isOpen &&
         [...node.children]
-          .sort((a, b) => {
-            if (a.type === b.type) return a.name.localeCompare(b.name);
-            return a.type === "folder" ? -1 : 1;
-          })
-          .map((child, i) => (
+          .sort((a, b) =>
+            a.type === b.type
+              ? a.name.localeCompare(b.name)
+              : a.type === "folder"
+                ? -1
+                : 1,
+          )
+          .map((child) => (
             <TreeNode
               key={child.path}
               node={child}

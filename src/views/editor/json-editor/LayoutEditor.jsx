@@ -3,27 +3,24 @@ import { useEffect } from "react";
 
 let isProviderRegistered = false;
 
-export default function LayoutEditor({ value, onChange, filePath }) {
+export default function LayoutEditor({ value, onChange, filePath, onSave }) {
   useEffect(() => {
     loader.init().then((monaco) => {
       if (isProviderRegistered) return;
-
       monaco.languages.registerCompletionItemProvider("json", {
         triggerCharacters: ["$"],
         provideCompletionItems: (model, position) => {
           const text = model.getValue();
           const offset = model.getOffsetAt(position);
 
-          // 1. ПЕРЕВІРКА КОНТЕКСТУ (чи ми в json-structure)
           const textBefore = text.substring(0, offset);
           const lastOpenBrace = textBefore.lastIndexOf("{");
           const lastStructure = textBefore.lastIndexOf('"json-structure"');
 
           if (lastStructure === -1 || lastStructure < lastOpenBrace) {
-            return null; // В інших блоках не даємо НІЧОГО, Monaco сам розбереться
+            return null;
           }
 
-          // 2. ЗБІР ID
           const idRegex = /"id"\s*:\s*"([^"]+)"/g;
           const foundIds = new Set();
           let match;
@@ -44,11 +41,10 @@ export default function LayoutEditor({ value, onChange, filePath }) {
               label: `$form.${id}`,
               kind: monaco.languages.CompletionItemKind.Variable,
               insertText: `$form.${id}`,
-              detail: `Змінна з форми (ID: ${id})`,
+              detail: `ID: ${id}`,
               range: range,
-              // ВАЖЛИВО: filterText допоможе Monaco зрозуміти, що це унікальна підказка
               filterText: `$form.${id}`,
-              sortText: "0", // Ставимо на самий верх
+              sortText: "0",
             })),
           };
         },
@@ -67,10 +63,18 @@ export default function LayoutEditor({ value, onChange, filePath }) {
       theme="vs-dark"
       value={value}
       onChange={onChange}
+      onMount={(editor, monaco) => {
+        editor.onKeyDown((e) => {
+          if ((e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyS) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onSave) onSave();
+          }
+        });
+      }}
       options={{
         tabSize: 2,
         automaticLayout: true,
-        // Вимикаємо авто-тригери, щоб Monaco не "угадував" зайве
         suggestOnTriggerCharacters: false,
       }}
     />

@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
+import { getSettings, loadConfigItems } from "../utils/settingsUtils";
 
 export const useFileSystem = (directoryHandle) => {
   const [fileSystem, setFileSystem] = useState([]);
   const [layoutList, setLayoutList] = useState([]);
+  const [migrationList, setMigrationList] = useState([]);
 
   useEffect(() => {
     if (!directoryHandle) return;
     loadData();
-
     const interval = setInterval(() => {
       if (window.__isCompiling || window.__isDragging) return;
       loadData();
-    }, 3000);
+    }, 6000);
 
     return () => clearInterval(interval);
   }, [directoryHandle]);
@@ -35,15 +36,20 @@ export const useFileSystem = (directoryHandle) => {
     }
     return results;
   };
-
-  const getDirHandleFromPath = async (path) => {
+  const getDirHandleFromPath = async (path, create = false) => {
     if (!path) return directoryHandle;
+
+    const existingEntry = fileSystem.find(
+      (f) => f.name === path && f.type === "folder",
+    );
+    if (existingEntry?.handle) return existingEntry.handle;
+
     const parts = path.split("/");
     let currentHandle = directoryHandle;
-    for (const part of parts)
-      currentHandle = await currentHandle.getDirectoryHandle(part, {
-        create: true,
-      });
+
+    for (const part of parts) {
+      currentHandle = await currentHandle.getDirectoryHandle(part, { create });
+    }
     return currentHandle;
   };
 
@@ -63,45 +69,21 @@ export const useFileSystem = (directoryHandle) => {
       return files;
     });
 
-    try {
-      const settingsEntry = files.find((f) => f.name === "settings.json");
-      if (!settingsEntry) return;
+    const settings = await getSettings(files);
+    if (!settings) return;
 
-      const settings = JSON.parse(
-        await (await settingsEntry.handle.getFile()).text(),
+    if (settings.layouts) {
+      const layouts = await loadConfigItems(files, settings.layouts, "layout");
+      setLayoutList(layouts);
+    }
+
+    if (settings.migrations) {
+      const migrations = await loadConfigItems(
+        files,
+        settings.migrations,
+        "migration",
       );
-
-      if (settings && Array.isArray(settings.layouts)) {
-        const fullLayouts = [];
-
-        for (const layoutConfig of settings.layouts) {
-          const layoutContentEntry = files.find(
-            (f) => f.name === layoutConfig.source,
-          );
-
-          if (layoutContentEntry) {
-            try {
-              const layoutJson = JSON.parse(
-                await (await layoutContentEntry.handle.getFile()).text(),
-              );
-
-              fullLayouts.push({
-                id: layoutConfig.id,
-                ...layoutJson,
-              });
-            } catch (err) {
-              console.error(
-                `Failed to parse layout file: ${layoutConfig.source}`,
-                err,
-              );
-            }
-          }
-        }
-
-        setLayoutList(fullLayouts);
-      }
-    } catch (e) {
-      console.error("Failed to load settings or layouts:", e);
+      setMigrationList(migrations);
     }
   };
 
@@ -284,15 +266,21 @@ export const useFileSystem = (directoryHandle) => {
 
   const handleSave = async (activeFile, fileSystem, fileContent) => {
     const entry = fileSystem.find((f) => f.name === activeFile);
-    const w = await entry.handle.createWritable();
-    await w.write(fileContent);
-    await w.close();
+    if (!entry || !entry.handle) {
+      console.error("Handle not found for:", activeFile);
+      return;
+    }
 
-    if (activeFile.startsWith("layouts/")) {
-      await loadData();
+    if (entry.type !== "file") return;
+
+    try {
+      const w = await entry.handle.createWritable();
+      await w.write(fileContent);
+      await w.close();
+    } catch (err) {
+      console.error("Write error:", err);
     }
   };
-
   const handleCreateFile = async (
     name,
     parentPath,
@@ -457,5 +445,6 @@ export const useFileSystem = (directoryHandle) => {
     handleRenameFile,
     handleUploadEntries,
     refreshDirectory: loadData,
+    migrationList,
   };
 };

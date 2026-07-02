@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { VscFiles } from "react-icons/vsc";
+import { VscFiles, VscSearch } from "react-icons/vsc";
 import { useEditor } from "@context/EditorContext";
 import { useTreeBuilder } from "@hooks/useTreeBuilder";
 import TreeNode from "./TreeNode";
 import ContextMenu from "./ContextMenu";
 
-export default function FileBrowser() {
+export default function FileBrowser({ width, setWidth }) {
   const { t } = useTranslation();
   const {
     fileSystem,
@@ -19,7 +19,6 @@ export default function FileBrowser() {
     setCreatingNodePath,
     setCreatingNodeType,
     selectedPaths,
-    handleNodeClick,
   } = useEditor();
 
   const treeData = useTreeBuilder(fileSystem);
@@ -28,19 +27,23 @@ export default function FileBrowser() {
   const [menu, setMenu] = useState({ x: 0, y: 0, visible: false, node: null });
   const panelRef = useRef(null);
   const dragCounter = useRef(0);
+  const isResizing = useRef(false);
 
-  const getFlatNodes = (nodes) => {
-    let flat = [];
-    nodes.forEach((node) => {
-      flat.push(node);
-      if (node.children) {
-        flat = flat.concat(getFlatNodes(node.children));
-      }
-    });
-    return flat;
+  const startResizing = () => {
+    isResizing.current = true;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", stopResizing);
   };
 
-  window.__flatNodesList = getFlatNodes(treeData);
+  const stopResizing = () => {
+    isResizing.current = false;
+    document.removeEventListener("mousemove", handleMouseMove);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isResizing.current) return;
+    if (e.clientX > 150 && e.clientX < 800) setWidth(e.clientX);
+  };
 
   const handleContextMenu = (e, node) => {
     setMenu({ x: e.clientX, y: e.clientY, visible: true, node });
@@ -50,7 +53,12 @@ export default function FileBrowser() {
     if (action === "delete") setModal({ type: "delete", path });
     if (action === "rename") setRenamingNodePath(path);
     if (action === "layout") setModal({ type: "layout", path });
-
+    if (action === "migrate") {
+      const filesToMigrate = selectedPaths.has(path)
+        ? Array.from(selectedPaths)
+        : [path];
+      setModal({ type: "migration-picker", paths: filesToMigrate });
+    }
     if (action === "create-file" || action === "create-folder") {
       const type = action === "create-file" ? "file" : "folder";
       if (menu.node) {
@@ -77,16 +85,13 @@ export default function FileBrowser() {
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = "move";
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current--;
-    if (dragCounter.current === 0) {
-      setIsDragOver(false);
-    }
+    if (dragCounter.current === 0) setIsDragOver(false);
   };
 
   const handleDrop = async (e) => {
@@ -94,21 +99,10 @@ export default function FileBrowser() {
     e.stopPropagation();
     setIsDragOver(false);
     dragCounter.current = 0;
-
+    const { handleMoveMultipleFiles } = useEditor();
     const targetPath = "";
     let sourcePaths = window.__draggedNodesPaths;
-
-    if (!sourcePaths) {
-      const rawData = e.dataTransfer.getData("application/x-multiple-paths");
-      if (rawData) {
-        try {
-          sourcePaths = JSON.parse(rawData);
-        } catch (err) {}
-      }
-    }
-
     if (sourcePaths && sourcePaths.length > 0) {
-      const { handleMoveMultipleFiles } = useEditor();
       await handleMoveMultipleFiles(
         sourcePaths,
         targetPath,
@@ -120,15 +114,12 @@ export default function FileBrowser() {
         window.__draggedNodePath ||
         e.dataTransfer.getData("application/x-internal-path");
       if (internalPath) {
-        if (internalPath.includes("/")) {
-          const name = internalPath.split("/").pop();
-          await handleRenameFile(internalPath, name, setFileSystem);
-        }
+        const name = internalPath.split("/").pop();
+        await handleRenameFile(internalPath, name, setFileSystem);
       } else if (e.dataTransfer.items) {
         await handleUploadEntries(e.dataTransfer.items, "");
       }
     }
-
     window.__draggedNodesPaths = null;
     window.__draggedNodePath = null;
   };
@@ -137,24 +128,42 @@ export default function FileBrowser() {
     <div
       className={`editor-sidebar-panel ${isDragOver ? "drag-root-active" : ""}`}
       ref={panelRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        outline: isFocused ? "1px solid #4a9eff" : "none",
+      }}
       onClick={() => setIsFocused(true)}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ outline: isFocused ? "1px solid #4a9eff" : "none" }}
     >
+      <div className="sidebar-resizer" onMouseDown={startResizing} />
       <div className="sidebar-header">
         <VscFiles style={{ marginRight: "8px" }} />
         <span>{t("explorer_title", "Explorer")}</span>
+        <button
+          className="search-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            setModal({ type: "search" });
+          }}
+          title={t("search_tooltip", "Search files")}
+        >
+          <VscSearch />
+        </button>
       </div>
       <div className="sidebar-tree">
         {[...treeData]
-          .sort((a, b) => {
-            if (a.type === b.type) return a.name.localeCompare(b.name);
-            return a.type === "folder" ? -1 : 1;
-          })
-          .map((node, i) => (
+          .sort((a, b) =>
+            a.type === b.type
+              ? a.name.localeCompare(b.name)
+              : a.type === "folder"
+                ? -1
+                : 1,
+          )
+          .map((node) => (
             <TreeNode
               key={node.path}
               node={node}
@@ -163,7 +172,6 @@ export default function FileBrowser() {
             />
           ))}
       </div>
-
       {menu.visible && (
         <ContextMenu
           x={menu.x}

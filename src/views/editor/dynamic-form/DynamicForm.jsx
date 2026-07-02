@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { VscSymbolNumeric, VscSymbolString } from "react-icons/vsc";
 import "./DynamicForm.css";
 
@@ -16,8 +16,29 @@ const ObjectArrayComponent = ({
   onArrayChange,
   renderInput,
 }) => {
-  const addItem = () => onArrayChange([...values, {}]);
+  const createDefaultObject = () => {
+    return opt.self.options.reduce((acc, subOpt) => {
+      acc[subOpt.id] = subOpt.default ?? "";
+      return acc;
+    }, {});
+  };
+
+  const syncValues = (currentValues) => {
+    return currentValues.map((item) => {
+      const syncedItem = { ...item };
+      opt.self.options.forEach((subOpt) => {
+        if (!(subOpt.id in syncedItem)) {
+          syncedItem[subOpt.id] = subOpt.default ?? "";
+        }
+      });
+      return syncedItem;
+    });
+  };
+
+  const addItem = () =>
+    onArrayChange(syncValues([...values, createDefaultObject()]));
   const removeItem = (idx) => onArrayChange(values.filter((_, i) => i !== idx));
+
   const updateItem = (idx, fieldId, value) => {
     const newArray = [...values];
     newArray[idx] = { ...newArray[idx], [fieldId]: value };
@@ -55,6 +76,58 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
   const jsonStructure = structure?.["json-structure"] || structure;
   const formSchema = uiSchema?.["ui-form"] || uiSchema;
 
+  useEffect(() => {
+    if (!data || !jsonStructure) return;
+
+    const mergeData = (struct, currentData) => {
+      let changed = false;
+      let result = JSON.parse(JSON.stringify(currentData));
+
+      Object.entries(struct).forEach(([key, value]) => {
+        if (typeof value === "string" && value.startsWith("$form.")) return;
+
+        if (Array.isArray(value) && value[0]?.$self) {
+          if (!Array.isArray(result[key])) {
+            result[key] = [];
+            changed = true;
+          }
+          const template = value[0];
+          result[key] = result[key].map((item) => {
+            let itemChanged = false;
+            let newItem = { ...item };
+            Object.entries(template).forEach(([subKey, subVal]) => {
+              if (subKey === "$self") return;
+              if (newItem[subKey] === undefined) {
+                newItem[subKey] = subVal;
+                itemChanged = true;
+              }
+            });
+            if (itemChanged) changed = true;
+            return newItem;
+          });
+        } else if (
+          typeof value === "object" &&
+          value !== null &&
+          !Array.isArray(value)
+        ) {
+          if (result[key] === undefined) {
+            result[key] = {};
+            changed = true;
+          }
+          const { merged, modified } = mergeData(value, result[key]);
+          result[key] = merged;
+          if (modified) changed = true;
+        } else if (result[key] === undefined) {
+          result[key] = value;
+          changed = true;
+        }
+      });
+      return { merged: result, modified: changed };
+    };
+
+    const { merged, modified } = mergeData(jsonStructure, data);
+    if (modified) onChange(merged);
+  }, [data, jsonStructure, onChange]);
   const pathMap = useMemo(() => {
     const map = {};
     if (!jsonStructure) return map;
@@ -72,36 +145,11 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
     return map;
   }, [jsonStructure]);
 
-  useEffect(() => {
-    if (!formSchema?.categories || !data) return;
-    let needsUpdate = false;
-    const newData = JSON.parse(JSON.stringify(data));
-    formSchema.categories.forEach((category) => {
-      category.options.forEach((opt) => {
-        if (opt.default !== undefined && opt.id) {
-          const realPath = pathMap[opt.id];
-          if (!realPath) return;
-          const keys = realPath.split(".");
-          let current = newData;
-          for (let i = 0; i < keys.length - 1; i++) {
-            if (!current[keys[i]]) current[keys[i]] = {};
-            current = current[keys[i]];
-          }
-          if (current[keys[keys.length - 1]] === undefined) {
-            current[keys[keys.length - 1]] = opt.default;
-            needsUpdate = true;
-          }
-        }
-      });
-    });
-    if (needsUpdate) onChange(newData);
-  }, [data, formSchema, pathMap, onChange]);
-
   const handleNestedChange = (fieldId, value) => {
     const realPath = pathMap[fieldId];
-    if (!realPath) return;
     const newData = JSON.parse(JSON.stringify(data || {}));
-    const keys = realPath.split(".");
+    const keys = realPath ? realPath.split(".") : fieldId.split(".");
+
     let current = newData;
     for (let i = 0; i < keys.length - 1; i++) {
       const key = keys[i];
