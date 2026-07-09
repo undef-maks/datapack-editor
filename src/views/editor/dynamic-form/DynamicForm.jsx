@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { VscSymbolNumeric, VscSymbolString, VscTrash } from "react-icons/vsc";
+import { useTranslation } from "react-i18next";
 import "./DynamicForm.css";
 import { useEditor } from "../../../context/EditorContext";
 
@@ -14,6 +15,8 @@ const InputComponent = ({ type = "text", icon: Icon, ...props }) => (
 );
 
 const StringArrayComponent = ({ values = [], onArrayChange }) => {
+  const { t } = useTranslation();
+
   const addItem = () => onArrayChange([...values, ""]);
   const removeItem = (idx) => onArrayChange(values.filter((_, i) => i !== idx));
   const updateItem = (idx, val) => {
@@ -35,18 +38,19 @@ const StringArrayComponent = ({ values = [], onArrayChange }) => {
             className="btn-delete-small"
             style={{ padding: "6px", cursor: "pointer" }}
             onClick={() => removeItem(idx)}
-            title="Видалити"
+            title={t("delete")}
           >
             <VscTrash />
           </button>
         </div>
       ))}
-      <button className="btn-add" onClick={addItem}>+ Додати елемент</button>
+      <button className="btn-add" onClick={addItem}>+ {t("form_add_element")}</button>
     </div>
   );
 };
 
 const SelectArrayComponent = ({ values = [], options = [], onArrayChange }) => {
+  const { t } = useTranslation();
   const [selectedValue, setSelectedValue] = useState("");
 
   const handleAdd = () => {
@@ -69,10 +73,10 @@ const SelectArrayComponent = ({ values = [], options = [], onArrayChange }) => {
           className="form-select"
           style={{ flex: 1 }}
         >
-          <option value="">Виберіть елемент для додавання...</option>
+          <option value="">{t("form_select_to_add")}</option>
           {options.map((opt, idx) => (
             <option key={idx} value={opt} disabled={values.includes(opt)}>
-              {opt} {values.includes(opt) ? "(вже додано)" : ""}
+              {opt} {values.includes(opt) ? `(${t("form_already_added")})` : ""}
             </option>
           ))}
         </select>
@@ -82,7 +86,7 @@ const SelectArrayComponent = ({ values = [], options = [], onArrayChange }) => {
           disabled={!selectedValue}
           style={{ margin: 0, whiteSpace: "nowrap" }}
         >
-          + Додати
+          + {t("form_btn_add")}
         </button>
       </div>
 
@@ -97,7 +101,7 @@ const SelectArrayComponent = ({ values = [], options = [], onArrayChange }) => {
               className="btn-delete-small"
               style={{ padding: "8px", cursor: "pointer" }}
               onClick={() => handleRemove(idx)}
-              title="Видалити"
+              title={t("delete")}
             >
               <VscTrash />
             </button>
@@ -108,10 +112,8 @@ const SelectArrayComponent = ({ values = [], options = [], onArrayChange }) => {
   );
 };
 
-// Компонент працює з масивом всередині ключа $self, зберігаючи сусідні декларації шаблону
 const ObjectArrayComponent = ({ opt, currentContainer, onArrayChange, renderInput }) => {
-
-  // Безпечно дістаємо поточний масив елементів з $self
+  const { t } = useTranslation();
   const items = Array.isArray(currentContainer?.$self) ? currentContainer.$self : [];
 
   const createDefaultObject = () => {
@@ -122,7 +124,6 @@ const ObjectArrayComponent = ({ opt, currentContainer, onArrayChange, renderInpu
   };
 
   const updateParent = (newItems) => {
-    // Повертаємо весь контейнер, замінюючи тільки $self, та зберігаючи інші ключі ("id", "count" тощо)
     onArrayChange({
       ...currentContainer,
       "$self": newItems
@@ -153,22 +154,21 @@ const ObjectArrayComponent = ({ opt, currentContainer, onArrayChange, renderInpu
               {renderInput(subOpt, subOpt.id, item[subOpt.id] ?? "", (fid, val) => updateItem(idx, fid, val))}
             </div>
           ))}
-          <button className="btn-delete" style={{ marginTop: "4px" }} onClick={() => removeItem(idx)}>Видалити</button>
+          <button className="btn-delete" style={{ marginTop: "4px" }} onClick={() => removeItem(idx)}>{t("delete")}</button>
         </div>
       ))}
-      <button className="btn-add" onClick={addItem}>+ Додати {opt.self?.title || "елемент"}</button>
+      <button className="btn-add" onClick={addItem}>+ {t("form_add_named_element", { name: opt.self?.title || t("form_default_element") })}</button>
     </div>
   );
 };
 
 export default function DynamicForm({ structure, uiSchema, data, onChange }) {
+  const { t } = useTranslation();
   const [, setTick] = useState(0);
   const jsonStructure = structure?.["json-structure"] || structure;
   const formSchema = uiSchema?.["ui-form"] || uiSchema;
   const { fileSystem } = useEditor();
 
-  // pathMap тепер будує шлях безпосередньо до ОБ'ЄКТА-КОНТЕЙНЕРА (батька $self), 
-  // щоб ObjectArray міг прочитати та зберегти сусідні мета-поля.
   const pathMap = useMemo(() => {
     const map = {};
     if (!jsonStructure) return map;
@@ -180,11 +180,9 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
           map[value.replace("$form.", "")] = currentPath;
         } else if (Array.isArray(value) && value[0] && typeof value[0] === "object") {
           const templateObj = value[0];
-          // Шукаємо або рядок-посилання, або об'єкт, який вже ініціалізовано
           const selfRef = templateObj.$self;
           if (typeof selfRef === "string" && selfRef.startsWith("$form.")) {
             const formId = selfRef.replace("$form.", "");
-            // Шлях веде до нульового індексу масиву (до самого об'єкта, де живуть $self, id, count)
             map[formId] = `${currentPath}.0`;
           }
         } else if (typeof value === "object" && value !== null) {
@@ -196,7 +194,6 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
     return map;
   }, [jsonStructure]);
 
-  // Ефект синхронізації схеми з початковими даними
   useEffect(() => {
     if (!data || !jsonStructure) return;
     const mergeData = (struct, currentData) => {
@@ -208,7 +205,6 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
 
         if (Array.isArray(value) && value[0] && typeof value[0] === "object" && value[0].$self) {
           if (!Array.isArray(result[key]) || result[key].length === 0) {
-            // Клонуємо весь шаблон-декларацію з json-structure, замінюючи рядок посилання на масив
             const initialContainer = { ...value[0], "$self": [] };
             result[key] = [initialContainer];
             changed = true;
@@ -293,7 +289,7 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
         return (
           <ObjectArrayComponent
             opt={opt}
-            currentContainer={value} // Сюди прийде весь об'єкт { $self: [...], id: ..., count: ... }
+            currentContainer={value}
             onArrayChange={(val) => onChange(fieldId, val)}
             renderInput={renderInput}
           />
@@ -309,7 +305,7 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
         const options = getSelectOptions(opt);
         return (
           <select value={value ?? ""} onChange={(e) => onChange(fieldId, e.target.value)} className="form-select">
-            <option value="">Виберіть...</option>
+            <option value="">{t("form_select_placeholder")}</option>
             {Array.isArray(options) && options.map((item, idx) => <option key={idx} value={item}>{item}</option>)}
           </select>
         );
@@ -318,7 +314,7 @@ export default function DynamicForm({ structure, uiSchema, data, onChange }) {
     }
   };
 
-  if (!formSchema?.categories) return <div className="form-empty">Немає структури</div>;
+  if (!formSchema?.categories) return <div className="form-empty">{t("form_empty")}</div>;
 
   return (
     <div className="form-grid">
