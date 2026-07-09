@@ -7,7 +7,13 @@ export class DatapackCompiler {
   async build() {
     const stats = { folders: 0, files: 0 };
     try {
-      await this.syncRecursive(this.srcHandle, this.buildHandle, stats);
+      for await (const name of this.buildHandle.keys()) {
+        await this.buildHandle.removeEntry(name, { recursive: true });
+      }
+      const originalDir = await this.buildHandle.getDirectoryHandle("original", {
+        create: true,
+      });
+      await this.syncRecursive(this.srcHandle, originalDir, stats);
       return { success: true, stats };
     } catch (err) {
       return { success: false, error: err.message, stats };
@@ -51,7 +57,7 @@ export class DatapackCompiler {
         );
         const targetFile = await targetFileHandle.getFile();
         if (srcFile.lastModified <= targetFile.lastModified) return;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const newHandle = await buildDirHandle.getFileHandle(srcFileHandle.name, {

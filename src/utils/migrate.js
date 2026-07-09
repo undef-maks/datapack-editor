@@ -1,5 +1,5 @@
 export const applyMigration = (data, template) => {
-  const result = { ...template };
+  const result = structuredClone(template);
 
   const replacePlaceholders = (obj, sourceData) => {
     for (const key in obj) {

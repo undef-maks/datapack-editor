@@ -35,6 +35,14 @@ export default function ContextMenu({ x, y, onClose, onAction, node }) {
           >
             New Folder
           </div>
+          <div
+            onClick={() => {
+              onAction("folder-migrate", path);
+              onClose();
+            }}
+          >
+            Migrate
+          </div>
         </>
       ) : (
         <>

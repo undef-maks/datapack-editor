@@ -85,9 +85,7 @@ export default function EditorModal() {
       const file = await entry.handle.getFile();
       const content = await file.text();
       const jsonData = JSON.parse(content);
-
       const migratedData = applyMigration(jsonData, template);
-
       await handleSave(
         filePath,
         fileSystem,

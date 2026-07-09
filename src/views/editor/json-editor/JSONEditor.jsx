@@ -5,14 +5,39 @@ import "./JSONEditor.css";
 export default function JSONEditor({ value, onChange, theme }) {
   const editorRef = useRef(null);
 
+  const onChangeRef = useRef(onChange);
   useEffect(() => {
-    if (editorRef.current && editorRef.current.getValue() !== value) {
-      editorRef.current.setValue(value || "");
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const lastValueRef = useRef(value || "");
+
+  useEffect(() => {
+    if (editorRef.current && value !== lastValueRef.current) {
+      lastValueRef.current = value || "";
+
+      const model = editorRef.current.getModel();
+      if (model) {
+        editorRef.current.executeEdits("remote-update", [{
+          range: model.getFullModelRange(),
+          text: value || "",
+          forceMoveMarkers: false
+        }]);
+      }
     }
   }, [value]);
 
+  const handleEditorChange = (newValue) => {
+    const text = newValue || "";
+    lastValueRef.current = text;
+    if (onChangeRef.current) {
+      onChangeRef.current(text);
+    }
+  };
+
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
+    editor.focus();
 
     monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
@@ -29,8 +54,8 @@ export default function JSONEditor({ value, onChange, theme }) {
       <Editor
         theme={theme === "light" ? "vs" : "vs-dark"}
         language="json"
-        value={value || ""}
-        onChange={onChange}
+        defaultValue={value || ""}
+        onChange={handleEditorChange}
         onMount={handleEditorDidMount}
         loading={null}
         width="100%"
@@ -46,6 +71,7 @@ export default function JSONEditor({ value, onChange, theme }) {
           formatOnPaste: true,
           formatOnType: false,
           quickSuggestions: true,
+          formatOnType: false,
         }}
       />
     </div>

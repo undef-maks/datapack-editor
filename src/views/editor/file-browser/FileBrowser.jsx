@@ -48,17 +48,32 @@ export default function FileBrowser({ width, setWidth }) {
   const handleContextMenu = (e, node) => {
     setMenu({ x: e.clientX, y: e.clientY, visible: true, node });
   };
-
   const handleMenuAction = (action, path) => {
     if (action === "delete") setModal({ type: "delete", path });
     if (action === "rename") setRenamingNodePath(path);
     if (action === "layout") setModal({ type: "layout", path });
+
     if (action === "migrate") {
       const filesToMigrate = selectedPaths.has(path)
         ? Array.from(selectedPaths)
         : [path];
       setModal({ type: "migration-picker", paths: filesToMigrate });
     }
+
+    if (action === "folder-migrate") {
+      const filesInFolder = fileSystem
+        .filter((f) =>
+          f.type === "file" &&
+          f.name.startsWith(path + "/") &&
+          f.name.endsWith(".json")
+        )
+        .map((f) => f.name);
+
+      if (filesInFolder.length > 0) {
+        setModal({ type: "migration-picker", paths: filesInFolder });
+      }
+    }
+
     if (action === "create-file" || action === "create-folder") {
       const type = action === "create-file" ? "file" : "folder";
       if (menu.node) {
