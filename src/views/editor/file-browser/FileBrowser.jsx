@@ -48,6 +48,7 @@ export default function FileBrowser({ width, setWidth }) {
   const handleContextMenu = (e, node) => {
     setMenu({ x: e.clientX, y: e.clientY, visible: true, node });
   };
+
   const handleMenuAction = (action, path) => {
     if (action === "delete") setModal({ type: "delete", path });
     if (action === "rename") setRenamingNodePath(path);
@@ -171,6 +172,7 @@ export default function FileBrowser({ width, setWidth }) {
       </div>
       <div className="sidebar-tree">
         {[...treeData]
+          .filter((node) => !node.name.split("/").pop().startsWith("."))
           .sort((a, b) =>
             a.type === b.type
               ? a.name.localeCompare(b.name)

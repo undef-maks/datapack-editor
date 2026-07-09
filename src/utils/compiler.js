@@ -10,10 +10,8 @@ export class DatapackCompiler {
       for await (const name of this.buildHandle.keys()) {
         await this.buildHandle.removeEntry(name, { recursive: true });
       }
-      const originalDir = await this.buildHandle.getDirectoryHandle("original", {
-        create: true,
-      });
-      await this.syncRecursive(this.srcHandle, originalDir, stats);
+
+      await this.syncRecursive(this.srcHandle, this.buildHandle, stats);
       return { success: true, stats };
     } catch (err) {
       return { success: false, error: err.message, stats };

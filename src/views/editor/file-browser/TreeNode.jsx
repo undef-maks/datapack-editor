@@ -54,11 +54,13 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
       setIsOpen(true);
     }
   }, [isCreatingHere]);
+
   useEffect(() => {
     if (expandedPaths.has(node.path)) {
       setIsOpen(true);
     }
   }, [expandedPaths, node.path]);
+
   const handleCreateSubmit = () => {
     if (tempName) {
       if (creatingNodeType === "file") {
@@ -126,7 +128,7 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
       if (rawData) {
         try {
           sourcePaths = JSON.parse(rawData);
-        } catch (err) {}
+        } catch (err) { }
       }
     }
     if (sourcePaths && sourcePaths.length > 0) {
@@ -305,6 +307,7 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
       )}
       {isOpen &&
         [...node.children]
+          .filter((child) => !child.name.split("/").pop().startsWith("."))
           .sort((a, b) =>
             a.type === b.type
               ? a.name.localeCompare(b.name)
@@ -323,3 +326,5 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
     </div>
   );
 }
+
+
