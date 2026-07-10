@@ -7,10 +7,6 @@ export class DatapackCompiler {
   async build() {
     const stats = { folders: 0, files: 0 };
     try {
-      for await (const name of this.buildHandle.keys()) {
-        await this.buildHandle.removeEntry(name, { recursive: true });
-      }
-
       await this.syncRecursive(this.srcHandle, this.buildHandle, stats);
       return { success: true, stats };
     } catch (err) {
@@ -46,18 +42,14 @@ export class DatapackCompiler {
 
   async syncFile(srcFileHandle, buildDirHandle) {
     const srcFile = await srcFileHandle.getFile();
+
+    try {
+      const targetFileHandle = await buildDirHandle.getFileHandle(srcFileHandle.name);
+      const targetFile = await targetFileHandle.getFile();
+      if (srcFile.lastModified <= targetFile.lastModified) return;
+    } catch (e) { }
+
     const isJson = srcFileHandle.name.toLowerCase().endsWith(".json");
-
-    if (!isJson) {
-      try {
-        const targetFileHandle = await buildDirHandle.getFileHandle(
-          srcFileHandle.name,
-        );
-        const targetFile = await targetFileHandle.getFile();
-        if (srcFile.lastModified <= targetFile.lastModified) return;
-      } catch (e) { }
-    }
-
     const newHandle = await buildDirHandle.getFileHandle(srcFileHandle.name, {
       create: true,
     });
