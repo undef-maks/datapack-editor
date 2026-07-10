@@ -25,6 +25,7 @@ export default function DatapackEditor({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [expandedPaths, setExpandedPaths] = useState(new Set());
+  const [isBuilding, setIsBuilding] = useState(false);
 
   const flattenNodes = (nodes) => {
     let list = [];
@@ -51,25 +52,29 @@ export default function DatapackEditor({
       });
       return;
     }
+
+    if (isBuilding) return;
+
     try {
-      window.__isCompiling = true;
+      setIsBuilding(true);
       const buildHandle = await directoryHandle.getDirectoryHandle("build", {
         create: true,
       });
       const srcHandle = await directoryHandle.getDirectoryHandle("src");
       const compiler = new DatapackCompiler(srcHandle, buildHandle);
       const result = await compiler.build();
-      window.__isCompiling = false;
       if (fs.refreshDirectory) await fs.refreshDirectory();
       modal.setModal({ type: "build-status", result: result });
     } catch (err) {
-      window.__isCompiling = false;
       modal.setModal({
         type: "build-status",
         result: { success: false, error: err.message },
       });
+    } finally {
+      setIsBuilding(false);
     }
   };
+
   const onUpdateLayout = async (filePath, selectedLayoutId) => {
     const layoutsList = editor.layoutsList || [];
     const currentLayout = layoutsList.find((l) => l.id === selectedLayoutId);
@@ -109,6 +114,7 @@ export default function DatapackEditor({
     }
     modal.setModal(null);
   };
+
   const expandPath = (path) => {
     const parts = path.split("/");
     let current = "";
@@ -152,6 +158,7 @@ export default function DatapackEditor({
             isDirty={editor.isDirty}
             fileContent={editor.fileContent}
             layoutsList={editor.layoutsList}
+            isBuilding={isBuilding}
           />
           <div className="panel-body">
             <EditorContent
