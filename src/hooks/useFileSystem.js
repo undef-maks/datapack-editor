@@ -12,7 +12,7 @@ export const useFileSystem = (directoryHandle) => {
     const interval = setInterval(() => {
       if (window.__isCompiling || window.__isDragging) return;
       loadData();
-    }, 6000);
+    }, 800);
 
     return () => clearInterval(interval);
   }, [directoryHandle]);
@@ -30,7 +30,7 @@ export const useFileSystem = (directoryHandle) => {
           const text = await (await entry.getFile()).text();
           const json = JSON.parse(text);
           if (json._meta?.layout_id) hasLayout = true;
-        } catch (e) {}
+        } catch (e) { }
         results.push({ type: "file", name: path, handle: entry, hasLayout });
       }
     }
@@ -217,7 +217,7 @@ export const useFileSystem = (directoryHandle) => {
             if (metaLayoutId) {
               foundLayoutConfig = layoutList.find((l) => l.id === metaLayoutId);
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         let finalLayout = foundLayoutConfig || null;
