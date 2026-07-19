@@ -77,7 +77,7 @@ export default function EditorContent({
 
   const renderContent = () => {
     if (isFileLoading) {
-      return <div className="editor-loading">Loading file data...</div>;
+      return <div className="editor-loading"></div>;
     }
 
     if (isImage) return <ImageViewer filePath={filePath} fileBlob={fileBlob} />;
