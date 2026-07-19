@@ -16,6 +16,7 @@ export const useTreeBuilder = (fileSystem) => {
             path: item.name,
             children: [],
             hasLayout: item.hasLayout,
+            file_type: item.file_type,
           };
           current.children.push(existing);
         }

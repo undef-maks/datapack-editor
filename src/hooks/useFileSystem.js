@@ -26,16 +26,29 @@ export const useFileSystem = (directoryHandle) => {
         results = results.concat(await readDirectory(entry, path));
       } else {
         let hasLayout = false;
+        let fileType = null;
+
         try {
           const text = await (await entry.getFile()).text();
           const json = JSON.parse(text);
           if (json._meta?.layout_id) hasLayout = true;
-        } catch (e) { }
-        results.push({ type: "file", name: path, handle: entry, hasLayout });
+          if (json._meta?.file_type) fileType = json._meta.file_type;
+        } catch (e) {
+        }
+
+        results.push({
+          type: "file",
+          name: path,
+          handle: entry,
+          hasLayout,
+          file_type: fileType,
+        });
+
       }
     }
     return results;
   };
+
   const getDirHandleFromPath = async (path, create = false) => {
     if (!path) return directoryHandle;
 
@@ -61,7 +74,9 @@ export const useFileSystem = (directoryHandle) => {
         prev.length === files.length &&
         prev.every(
           (f, i) =>
-            f.name === files[i]?.name && f.hasLayout === files[i]?.hasLayout,
+            f.name === files[i]?.name &&
+            f.hasLayout === files[i]?.hasLayout &&
+            f.file_type === files[i]?.file_type,
         )
       ) {
         return prev;
@@ -295,12 +310,14 @@ export const useFileSystem = (directoryHandle) => {
     });
 
     let initialData = {};
+    let fileType = null;
 
     if (window.__isTodoCreation) {
       initialData = {
         _meta: { file_type: "todo" },
         tasks: []
       };
+      fileType = "todo";
       window.__isTodoCreation = false;
     } else {
       initialData = { id: name.replace(".json", "") };
@@ -323,9 +340,11 @@ export const useFileSystem = (directoryHandle) => {
         name: parentPath ? `${parentPath}/${fileName}` : fileName,
         handle: fileHandle,
         hasLayout: !!layoutId,
+        file_type: fileType,
       },
     ]);
   };
+
   const handleCreateFolder = async (folderName, parentPath, setFileSystem) => {
     const targetDir = await getDirHandleFromPath(parentPath);
     const folderHandle = await targetDir.getDirectoryHandle(folderName, {

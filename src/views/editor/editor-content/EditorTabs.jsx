@@ -1,3 +1,4 @@
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { VscCode, VscListSelection, VscSettings } from "react-icons/vsc";
 
@@ -6,8 +7,13 @@ const EditorTabs = ({
   setViewMode,
   isLayoutLoading,
   isMigrationFile,
+  isFileLoading,
 }) => {
   const { t } = useTranslation();
+
+  if (isFileLoading) {
+    return <div className="view-mode-tabs" />;
+  }
 
   return (
     <div className="view-mode-tabs">

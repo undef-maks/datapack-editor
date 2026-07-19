@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import JSONEditor from "../json-editor/JSONEditor";
 import LayoutEditor from "../json-editor/LayoutEditor";
 import DynamicForm from "../dynamic-form/DynamicForm";
@@ -21,6 +21,8 @@ export default function EditorContent({
   onSave,
   migrationList,
 }) {
+  const [loadedPath, setLoadedPath] = useState(null);
+
   const isImage = useMemo(() => isImageFile(filePath), [filePath]);
   const is3DModel = useMemo(() => isModelFile(filePath), [filePath]);
   const isLayoutFile = useMemo(
@@ -32,34 +34,55 @@ export default function EditorContent({
     [filePath, migrationList],
   );
 
+  useEffect(() => {
+    if (filePath) {
+      if (isImage || is3DModel) {
+        if (fileBlob) setLoadedPath(filePath);
+      } else {
+        if (fileContent !== undefined && fileContent !== null) {
+          setLoadedPath(filePath);
+        }
+      }
+    }
+  }, [filePath, fileContent, fileBlob, isImage, is3DModel]);
+
+  useEffect(() => {
+    setLoadedPath(null);
+  }, [filePath]);
+
   const parsedJson = useMemo(() => {
-    if (isImage || is3DModel || !fileContent) return null;
+    if (isImage || is3DModel || !fileContent || loadedPath !== filePath) return null;
     try {
       return JSON.parse(fileContent);
     } catch (e) {
       return null;
     }
-  }, [fileContent, isImage, is3DModel]);
+  }, [fileContent, isImage, is3DModel, loadedPath, filePath]);
 
   const isTodoFile = useMemo(() => {
     return parsedJson?._meta?.file_type === "todo";
   }, [parsedJson]);
 
   useEffect(() => {
-    if (isTodoFile && viewMode !== "migration" && viewMode !== "form" && viewMode !== "json") {
+    if (isTodoFile && viewMode !== "form") {
       setViewMode("form");
     }
-  }, [isTodoFile, filePath, viewMode, setViewMode]);
+  }, [isTodoFile, viewMode, setViewMode]);
 
   const fileLayoutId = getFileLayoutId(fileContent);
   const isLayoutLoading =
     fileLayoutId && (!currentLayout || currentLayout.id !== fileLayoutId);
 
+  const isFileLoading = loadedPath !== filePath;
+
   const renderContent = () => {
+    if (isFileLoading) {
+      return <div className="editor-loading">Loading file data...</div>;
+    }
+
     if (isImage) return <ImageViewer filePath={filePath} fileBlob={fileBlob} />;
-    if (is3DModel)
-      return <ModelViewer filePath={filePath} fileBlob={fileBlob} />;
-    if (isLayoutFile)
+    if (is3DModel) return <ModelViewer filePath={filePath} fileBlob={fileBlob} />;
+    if (isLayoutFile) {
       return (
         <LayoutEditor
           key={filePath}
@@ -68,6 +91,7 @@ export default function EditorContent({
           onSave={onSave}
         />
       );
+    }
 
     if (isTodoFile && viewMode === "form") {
       return (
@@ -113,12 +137,12 @@ export default function EditorContent({
   };
 
   const showModeToggle =
-    !isImage && !is3DModel && (!!fileLayoutId || !!currentMigration || isTodoFile);
+    !isImage && !is3DModel && (!!fileLayoutId || !!currentMigration || isTodoFile || isFileLoading);
 
   return (
     <div
       className="editor-content-wrapper"
-      style={isLayoutLoading ? { opacity: 0.7 } : {}}
+      style={isLayoutLoading || isFileLoading ? { opacity: 0.7 } : {}}
     >
       {showModeToggle && (
         <EditorTabs
@@ -127,6 +151,7 @@ export default function EditorContent({
           isLayoutLoading={isLayoutLoading}
           isMigrationFile={!!currentMigration}
           onChange={setFileContent}
+          isFileLoading={isFileLoading}
           key={filePath}
         />
       )}

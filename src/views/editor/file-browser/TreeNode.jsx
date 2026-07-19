@@ -10,6 +10,7 @@ import {
   VscLayout,
   VscFileMedia,
   VscCode,
+  VscChecklist,
 } from "react-icons/vsc";
 import { useEditor } from "@context/EditorContext";
 
@@ -167,6 +168,9 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
       return (
         <VscSymbolMethod style={{ marginRight: "8px", color: "#d97706" }} />
       );
+
+    if (node.hasTodo === "todo" || node.file_type == "todo")
+      return <VscChecklist style={{ marginRight: "8px", color: "#10b981" }} />;
     const ext = node.name.split(".").pop().toLowerCase();
     const imageExtensions = ["png", "jpg", "jpeg", "gif", "webp", "ico", "svg"];
     if (imageExtensions.includes(ext))
@@ -326,5 +330,3 @@ export default function TreeNode({ node, level = 0, onContextMenu }) {
     </div>
   );
 }
-
-
