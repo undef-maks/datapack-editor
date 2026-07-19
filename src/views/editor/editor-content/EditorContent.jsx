@@ -4,6 +4,7 @@ import LayoutEditor from "../json-editor/LayoutEditor";
 import DynamicForm from "../dynamic-form/DynamicForm";
 import ImageViewer from "./../image-viewer/ImageViewer";
 import ModelViewer from "./model-viewer/ModelViewer";
+import TodoEditor from "../todo-editor/TodoEditor";
 import EditorTabs from "./EditorTabs";
 import { MigrationEditor } from "../migrations-editor/MigrationEditor";
 import { isModelFile, isImageFile, getFileLayoutId } from "@utils/editorUtils";
@@ -31,6 +32,25 @@ export default function EditorContent({
     [filePath, migrationList],
   );
 
+  const parsedJson = useMemo(() => {
+    if (isImage || is3DModel || !fileContent) return null;
+    try {
+      return JSON.parse(fileContent);
+    } catch (e) {
+      return null;
+    }
+  }, [fileContent, isImage, is3DModel]);
+
+  const isTodoFile = useMemo(() => {
+    return parsedJson?._meta?.file_type === "todo";
+  }, [parsedJson]);
+
+  useEffect(() => {
+    if (isTodoFile && viewMode !== "migration" && viewMode !== "form" && viewMode !== "json") {
+      setViewMode("form");
+    }
+  }, [isTodoFile, filePath, viewMode, setViewMode]);
+
   const fileLayoutId = getFileLayoutId(fileContent);
   const isLayoutLoading =
     fileLayoutId && (!currentLayout || currentLayout.id !== fileLayoutId);
@@ -48,6 +68,16 @@ export default function EditorContent({
           onSave={onSave}
         />
       );
+
+    if (isTodoFile && viewMode === "form") {
+      return (
+        <TodoEditor
+          key={filePath}
+          data={parsedJson}
+          onChange={(newData) => setFileContent(JSON.stringify(newData, null, 2))}
+        />
+      );
+    }
 
     if (viewMode === "migration" && currentMigration) {
       return (
@@ -67,7 +97,7 @@ export default function EditorContent({
         <DynamicForm
           structure={currentLayout["json-structure"] || {}}
           uiSchema={currentLayout["ui-form"] || {}}
-          data={JSON.parse(fileContent || "{}")}
+          data={parsedJson || {}}
           onChange={(d) => setFileContent(JSON.stringify(d, null, 2))}
         />
       );
@@ -83,7 +113,7 @@ export default function EditorContent({
   };
 
   const showModeToggle =
-    !isImage && !is3DModel && (!!fileLayoutId || !!currentMigration);
+    !isImage && !is3DModel && (!!fileLayoutId || !!currentMigration || isTodoFile);
 
   return (
     <div

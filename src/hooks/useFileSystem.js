@@ -281,6 +281,7 @@ export const useFileSystem = (directoryHandle) => {
       console.error("Write error:", err);
     }
   };
+
   const handleCreateFile = async (
     name,
     parentPath,
@@ -292,15 +293,29 @@ export const useFileSystem = (directoryHandle) => {
     const fileHandle = await targetDir.getFileHandle(fileName, {
       create: true,
     });
-    let initialData = { id: name.replace(".json", "") };
-    if (layoutId)
+
+    let initialData = {};
+
+    if (window.__isTodoCreation) {
       initialData = {
-        _meta: { layout_id: layoutId, version: "1.0.0" },
-        ...initialData,
+        _meta: { file_type: "todo" },
+        tasks: []
       };
+      window.__isTodoCreation = false;
+    } else {
+      initialData = { id: name.replace(".json", "") };
+      if (layoutId) {
+        initialData = {
+          _meta: { layout_id: layoutId, version: "1.0.0" },
+          ...initialData,
+        };
+      }
+    }
+
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(initialData, null, 2));
     await writable.close();
+
     setFileSystem((prev) => [
       ...prev,
       {
@@ -311,7 +326,6 @@ export const useFileSystem = (directoryHandle) => {
       },
     ]);
   };
-
   const handleCreateFolder = async (folderName, parentPath, setFileSystem) => {
     const targetDir = await getDirHandleFromPath(parentPath);
     const folderHandle = await targetDir.getDirectoryHandle(folderName, {

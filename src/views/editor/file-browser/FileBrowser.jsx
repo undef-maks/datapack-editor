@@ -75,11 +75,19 @@ export default function FileBrowser({ width, setWidth }) {
       }
     }
 
-    if (action === "create-file" || action === "create-folder") {
-      const type = action === "create-file" ? "file" : "folder";
+    if (action === "create-file" || action === "create-folder" || action === "create-todo-file") {
+      const type = action === "create-folder" ? "folder" : "file";
       if (menu.node) {
         setCreatingNodePath(path);
-        setCreatingNodeType(type);
+
+        if (action === "create-todo-file") {
+          window.__isTodoCreation = true;
+          setCreatingNodeType("file");
+        } else {
+          window.__isTodoCreation = false;
+          setCreatingNodeType(type);
+        }
+
         setFocusedNode(menu.node);
       }
     }

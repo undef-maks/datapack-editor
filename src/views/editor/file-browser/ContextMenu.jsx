@@ -11,6 +11,11 @@ export default function ContextMenu({ x, y, onClose, onAction, node }) {
   const isFolder = node?.type === "folder";
   const path = node?.path;
 
+  const handleItemClick = (actionType) => {
+    onAction(actionType, path);
+    onClose();
+  };
+
   return (
     <div
       className="context-menu"
@@ -19,47 +24,25 @@ export default function ContextMenu({ x, y, onClose, onAction, node }) {
     >
       {isFolder ? (
         <>
-          <div
-            onClick={() => {
-              onAction("create-file", path);
-              onClose();
-            }}
-          >
+          <div onClick={() => handleItemClick("create-file")}>
             New File
           </div>
-          <div
-            onClick={() => {
-              onAction("create-folder", path);
-              onClose();
-            }}
-          >
+          <div onClick={() => handleItemClick("create-folder")}>
             New Folder
           </div>
-          <div
-            onClick={() => {
-              onAction("folder-migrate", path);
-              onClose();
-            }}
-          >
+          <div onClick={() => handleItemClick("create-todo-file")}>
+            Create Todo List
+          </div>
+          <div onClick={() => handleItemClick("folder-migrate")}>
             Migrate
           </div>
         </>
       ) : (
         <>
-          <div
-            onClick={() => {
-              onAction("layout", path);
-              onClose();
-            }}
-          >
+          <div onClick={() => handleItemClick("layout")}>
             Change Layout
           </div>
-          <div
-            onClick={() => {
-              onAction("migrate", path);
-              onClose();
-            }}
-          >
+          <div onClick={() => handleItemClick("migrate")}>
             Migrate
           </div>
         </>
@@ -67,20 +50,12 @@ export default function ContextMenu({ x, y, onClose, onAction, node }) {
 
       <div className="context-menu-separator" />
 
-      <div
-        onClick={() => {
-          onAction("rename", path);
-          onClose();
-        }}
-      >
+      <div onClick={() => handleItemClick("rename")}>
         Rename
       </div>
       <div
         className="context-menu-danger"
-        onClick={() => {
-          onAction("delete", path);
-          onClose();
-        }}
+        onClick={() => handleItemClick("delete")}
       >
         Delete
       </div>

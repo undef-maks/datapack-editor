@@ -1,0 +1,321 @@
+.todoEditorContainer {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  max-width: 650px;
+  margin: 20px auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.todoHeader {
+  margin-bottom: 20px;
+}
+
+.todoClickableTitle {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.todoClickableTitle:hover {
+  background: var(--button-bg);
+  border-color: var(--border-color);
+}
+
+.todoHeaderInput {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 2px 4px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+}
+
+.todoClickableDesc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1px solid transparent;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.todoClickableDesc:hover {
+  background: var(--button-bg);
+  border-color: var(--border-color);
+}
+
+.todoDescInput {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 2px 4px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+}
+
+.todoInputForm {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.todoInput {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease;
+}
+
+.todoInput:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.todoAddBtn {
+  background: var(--button-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.todoAddBtn:hover {
+  background: var(--button-hover);
+  border-color: var(--text-secondary);
+}
+
+.todoList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.todoItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--header-bg);
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.todoItem:hover {
+  border-color: var(--input-border);
+}
+
+.todoItem.done {
+  opacity: 0.55;
+}
+
+.todoItem.dragging {
+  opacity: 0.3;
+  border: 1px dashed var(--accent-color);
+  background: var(--button-bg);
+}
+
+.todoItemLeft {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0; /* дозволяє тексту коректно обрізатися або переноситися всередині flex */
+}
+
+.todoDragHandle {
+  cursor: move;
+  color: var(--text-secondary);
+  padding-right: 12px;
+  user-select: none;
+  font-size: 1rem;
+  transition: color 0.15s ease;
+}
+
+.todoDragHandle:hover {
+  color: var(--accent-color);
+}
+
+.todoCheckboxWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.todoCheckbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.todoCustomCheck {
+  position: relative;
+  display: inline-block;
+  min-width: 16px;
+  max-width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 3px;
+  background: transparent;
+  margin-right: 12px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.todoCheckboxWrapper:hover .todoCheckbox ~ .todoCustomCheck {
+  border-color: var(--accent-color);
+}
+
+.todoCheckbox:checked ~ .todoCustomCheck {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.todoCheckbox:checked ~ .todoCustomCheck::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--header-bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+body.theme-light .todoCheckbox:checked ~ .todoCustomCheck::after {
+  border-color: var(--header-bg);
+}
+
+.todoText {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  white-space: normal;
+  word-break: break-word;
+  flex: 1;
+}
+
+.todoText:hover {
+  background: var(--button-bg);
+  border-color: var(--border-color);
+}
+
+.todoItem.done .todoText {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+.todoItemInput {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex: 1;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+}
+
+.todoDeleteBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  margin-left: 8px;
+}
+
+.todoItem:hover .todoDeleteBtn {
+  opacity: 1;
+}
+
+.todoDeleteBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.todoEmpty {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--text-secondary);
+}
+
+.todoEmptyIcon {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.todoFooter {
+  margin-top: 24px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.todoProgressText {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.todoProgressBar {
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.todoProgressFill {
+  background: var(--accent-color);
+  height: 100%;
+  transition: width 0.25s ease-out;
+}
